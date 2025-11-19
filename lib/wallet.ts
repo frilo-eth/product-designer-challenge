@@ -20,7 +20,7 @@ import { mainnet, base, arbitrum } from 'wagmi/chains'
  */
 export const config = getDefaultConfig({
   appName: 'Arrakis Vault Dashboard',
-  projectId: 'arrakis-product-designer-challenge', // This can be any string in mock mode
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'arrakis-product-designer-challenge',
   chains: [mainnet, base, arbitrum],
   ssr: true, // Enable server-side rendering
 })

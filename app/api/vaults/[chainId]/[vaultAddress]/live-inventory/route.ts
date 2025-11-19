@@ -1,8 +1,8 @@
 /**
- * GET /api/vaults/[chainId]/[vaultAddress]/inventory-ratio
+ * GET /api/vaults/[chainId]/[vaultAddress]/live-inventory
  *
  * Proxies to: GET /{chainId}/{vaultAddress}/live/inventory?refresh=false
- * Returns: Base/quote token ratio over time
+ * Returns: Current token balance snapshot (not historical)
  */
 
 import { NextResponse } from 'next/server'
@@ -32,7 +32,7 @@ export async function GET(
     if (!response.ok) {
       return NextResponse.json(
         {
-          error: 'Failed to fetch inventory ratio',
+          error: 'Failed to fetch live inventory',
           message: response.statusText,
         },
         { status: response.status }
@@ -43,7 +43,7 @@ export async function GET(
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching inventory ratio:', error)
+    console.error('Error fetching live inventory:', error)
     return NextResponse.json(
       {
         error: 'Internal server error',

@@ -8,7 +8,8 @@
 import type {
   VaultMetadata,
   LiquidityProfile,
-  InventoryRatio,
+  LiveInventoryResponse,
+  VaultBalanceResponse,
   PriceImpactResponse,
   FeesHistoryResponse,
   ApiError,
@@ -70,19 +71,44 @@ export async function fetchLiquidityProfile(
 }
 
 /**
- * Fetch inventory ratio (base/quote token distribution over time)
+ * Fetch live inventory (current token balance snapshot)
  *
  * @param chainId - The blockchain chain ID
  * @param vaultAddress - The vault contract address
- * @returns Inventory ratio data points
+ * @returns Current inventory state
  */
-export async function fetchInventoryRatio(
+export async function fetchLiveInventory(
   chainId: number,
   vaultAddress: string
-): Promise<InventoryRatio> {
-  return apiFetch<InventoryRatio>(
-    `${API_BASE}/${chainId}/${vaultAddress}/inventory-ratio`
+): Promise<LiveInventoryResponse> {
+  return apiFetch<LiveInventoryResponse>(
+    `${API_BASE}/${chainId}/${vaultAddress}/live-inventory`
   )
+}
+
+/**
+ * Fetch historical vault balance composition over time
+ *
+ * @param chainId - The blockchain chain ID
+ * @param vaultAddress - The vault contract address
+ * @param startDate - Start date in ISO format (default: 30 days ago)
+ * @param endDate - End date in ISO format (default: now)
+ * @returns Historical token balance percentages over time
+ */
+export async function fetchVaultBalance(
+  chainId: number,
+  vaultAddress: string,
+  startDate?: string,
+  endDate?: string
+): Promise<VaultBalanceResponse> {
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+
+  const queryString = params.toString()
+  const url = `${API_BASE}/${chainId}/${vaultAddress}/vault-balance${queryString ? `?${queryString}` : ''}`
+
+  return apiFetch<VaultBalanceResponse>(url)
 }
 
 /**

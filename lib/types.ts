@@ -52,22 +52,90 @@ export interface LiquidityProfile {
 }
 
 // ============================================
-// Inventory Types
+// Live Inventory Types
 // ============================================
 
-export interface InventoryDataPoint {
+export interface LiveInventoryResponse {
+  chainId: number
+  vaultId: string
+  data: {
+    totalValueUSD: number
+    utilizationPercentage: number
+    tokens: {
+      token0: {
+        symbol: string
+        address: string
+        amount: string
+        valueUSD: number
+        percentage: number
+        decimals: number
+        utilizationPercentage: number
+      }
+      token1: {
+        symbol: string
+        address: string
+        amount: string
+        valueUSD: number
+        percentage: number
+        decimals: number
+        utilizationPercentage: number
+      }
+    }
+    lastPriceUpdate: string
+  }
   timestamp: string
-  token0Amount: string
-  token1Amount: string
-  token0Ratio: number
-  token1Ratio: number
-  totalValueUSD?: string
+  lastUpdated: string
+  cached: boolean
 }
 
-export interface InventoryRatio {
-  data: InventoryDataPoint[]
-  token0Symbol: string
-  token1Symbol: string
+// ============================================
+// Vault Balance (Historical Composition) Types
+// ============================================
+
+export interface VaultBalanceDataPoint {
+  timestamp: string
+  totalValueUSD: number
+  tokens: {
+    token0: {
+      amount: string
+      valueUSD: number
+      price: number
+      percentage: number
+    }
+    token1: {
+      amount: string
+      valueUSD: number
+      price: number
+      percentage: number
+    }
+  }
+}
+
+export interface VaultBalanceResponse {
+  chainId: number
+  vaultId: string
+  metadata: {
+    tokens: {
+      token0: {
+        symbol: string
+        address: string
+        decimals: number
+      }
+      token1: {
+        symbol: string
+        address: string
+        decimals: number
+      }
+    }
+    requestedStartDate: string
+    requestedEndDate: string
+    requestedHours: number
+    actualHoursAvailable: number
+    bucketSizeHours: number
+  }
+  data: VaultBalanceDataPoint[]
+  timestamp: string
+  lastUpdated: string
 }
 
 // ============================================

@@ -20,10 +20,19 @@ Returns liquidity distribution across price ticks.
 
 ---
 
-### `fetchInventoryRatio(chainId, vaultAddress)`
-Returns token balance distribution over time.
+### `fetchLiveInventory(chainId, vaultAddress)`
+Returns current token balance snapshot.
 
-**Route:** `GET /api/vaults/{chainId}/{vaultAddress}/inventory-ratio`
+**Route:** `GET /api/vaults/{chainId}/{vaultAddress}/live-inventory`
+
+---
+
+### `fetchVaultBalance(chainId, vaultAddress, startDate?, endDate?)`
+Returns historical token balance percentages over time (for Vault Composition charts).
+
+**Route:** `GET /api/vaults/{chainId}/{vaultAddress}/vault-balance?startDate=...&endDate=...`
+
+**Defaults:** Defaults to last 30 days if dates not provided
 
 ---
 

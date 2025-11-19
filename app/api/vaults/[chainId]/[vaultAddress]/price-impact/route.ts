@@ -22,11 +22,11 @@ export async function GET(
 
     // Get query parameters with defaults
     const tradeSize = searchParams.get('tradeSize') || '5000'
-    const startDate = searchParams.get('startDate') || '2025-01-01'
-    const endDate = searchParams.get('endDate') || '2025-11-19'
+    const startDate = searchParams.get('startDate') || '2025-01-01T00:00:00Z'
+    const endDate = searchParams.get('endDate') || '2025-11-19T23:59:59Z'
 
     const queryParams = new URLSearchParams({
-      tradeSize,
+      usdValue: tradeSize, 
       startDate,
       endDate,
     })

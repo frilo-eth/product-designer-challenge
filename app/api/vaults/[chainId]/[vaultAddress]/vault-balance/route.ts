@@ -1,9 +1,8 @@
 /**
- * GET /api/vaults/[chainId]/[vaultAddress]/fees-history
+ * GET /api/vaults/[chainId]/[vaultAddress]/vault-balance
  *
- * Proxies to: GET /{chainId}/{vaultAddress}/historical/fees
- * Query params: startDate, endDate
- * Returns: Historical fee earnings for the vault
+ * Proxies to: GET /{chainId}/{vaultAddress}/historical/vault-balance?startDate=...&endDate=...&refresh=false
+ * Returns: Historical token balance composition over time
  */
 
 import { NextResponse } from 'next/server'
@@ -20,30 +19,31 @@ export async function GET(
     const { chainId, vaultAddress } = params
     const { searchParams } = new URL(request.url)
 
-    // Get query parameters with defaults
-    const startDate = searchParams.get('startDate') || '2025-01-01T00:00:00Z'
-    const endDate = searchParams.get('endDate') || '2025-11-19T23:59:59Z'
+    const endDate = searchParams.get('endDate') || new Date().toISOString()
+    const startDate =
+      searchParams.get('startDate') ||
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const queryParams = new URLSearchParams({
-      startDate,
-      endDate,
-    })
+    const url = new URL(
+      `${INDEXER_API_URL}/indexer/private/${chainId}/${vaultAddress}/historical/vault-balance`
+    )
+    url.searchParams.append('startDate', startDate)
+    url.searchParams.append('endDate', endDate)
+    url.searchParams.append('refresh', 'false')
 
-    const url = `${INDEXER_API_URL}/indexer/private/${chainId}/${vaultAddress}/historical/fees?${queryParams}`
-
-    const response = await fetch(url, {
+    const response = await fetch(url.toString(), {
       headers: {
         'Content-Type': 'application/json',
       },
       next: {
-        revalidate: 300, // Cache for 5 minutes (historical data)
+        revalidate: 300, // Cache for 5 minutes
       },
     })
 
     if (!response.ok) {
       return NextResponse.json(
         {
-          error: 'Failed to fetch fees history',
+          error: 'Failed to fetch vault balance history',
           message: response.statusText,
         },
         { status: response.status }
@@ -54,7 +54,7 @@ export async function GET(
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching fees history:', error)
+    console.error('Error fetching vault balance history:', error)
     return NextResponse.json(
       {
         error: 'Internal server error',

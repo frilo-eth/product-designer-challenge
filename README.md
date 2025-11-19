@@ -192,33 +192,33 @@ Returns liquidity distribution across price ticks.
 
 ---
 
-#### 3. Get Inventory Ratio
+#### 3. Get Live Inventory
 ```
-GET /api/vaults/{chainId}/{vaultAddress}/inventory-ratio
+GET /api/vaults/{chainId}/{vaultAddress}/live-inventory
 ```
-Returns token balance distribution over time.
+Returns current token balance snapshot.
 
-**Helper Function**: `fetchInventoryRatio(chainId, vaultAddress)`
-
-**Response Structure**:
-```typescript
-{
-  data: Array<{
-    timestamp: string
-    token0Amount: string
-    token1Amount: string
-    token0Ratio: number
-    token1Ratio: number
-    totalValueUSD?: string
-  }>
-  token0Symbol: string
-  token1Symbol: string
-}
-```
+**Helper Function**: `fetchLiveInventory(chainId, vaultAddress)`
 
 ---
 
-#### 4. Get Price Impact
+#### 4. Get Vault Balance (Historical Composition)
+```
+GET /api/vaults/{chainId}/{vaultAddress}/vault-balance
+  ?startDate=2025-01-01T00:00:00Z
+  &endDate=2025-11-19T23:59:59Z
+```
+Returns historical token balance percentages over time. Essential for "Vault Composition" charts.
+
+**Parameters**:
+- `startDate`: Start date in ISO format (optional, defaults to 30 days ago)
+- `endDate`: End date in ISO format (optional, defaults to now)
+
+**Helper Function**: `fetchVaultBalance(chainId, vaultAddress, startDate?, endDate?)`
+
+---
+
+#### 5. Get Price Impact
 ```
 GET /api/vaults/{chainId}/{vaultAddress}/price-impact
   ?tradeSize=5000
@@ -236,7 +236,7 @@ Returns price impact analysis for different trade sizes.
 
 ---
 
-#### 5. Get Fees History
+#### 6. Get Fees History
 ```
 GET /api/vaults/{chainId}/{vaultAddress}/fees-history
   ?startDate=2025-01-01
