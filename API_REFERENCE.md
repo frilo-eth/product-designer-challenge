@@ -45,13 +45,6 @@ Returns historical fee earnings.
 
 ---
 
-### `fetchVaultsList()`
-Returns list of all available vaults.
-
-**Route:** `GET /api/vaults`
-
----
-
 ## Test Vaults
 
 ```typescript

@@ -31,18 +31,6 @@ export interface VaultMetadata {
   createdAt?: string
 }
 
-export interface Vault {
-  id: string
-  chainId: number
-  address: string
-  metadata: VaultMetadata
-}
-
-export interface VaultsListResponse {
-  vaults: Vault[]
-  total: number
-}
-
 // ============================================
 // Liquidity Profile Types
 // ============================================

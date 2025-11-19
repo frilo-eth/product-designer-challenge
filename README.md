@@ -52,7 +52,6 @@ arrakis-product-designer-challenge/
 ├── app/                          # Next.js 14 App Router
 │   ├── api/                      # API proxy routes
 │   │   └── vaults/               # Vault API endpoints
-│   │       ├── route.ts          # GET /api/vaults (list all)
 │   │       └── [chainId]/
 │   │           └── [vaultAddress]/
 │   │               ├── route.ts                    # GET vault details
@@ -143,17 +142,7 @@ All API routes are proxied through Next.js to avoid CORS issues.
 
 ### Available Endpoints
 
-#### 1. List All Vaults
-```
-GET /api/vaults
-```
-Returns a list of all available vaults.
-
-**Helper Function**: `fetchVaultsList()`
-
----
-
-#### 2. Get Vault Details
+#### 1. Get Vault Details
 ```
 GET /api/vaults/{chainId}/{vaultAddress}
 ```
@@ -177,7 +166,7 @@ const vaultData = await fetchVaultDetails(
 
 ---
 
-#### 3. Get Liquidity Profile
+#### 2. Get Liquidity Profile
 ```
 GET /api/vaults/{chainId}/{vaultAddress}/liquidity
 ```
@@ -204,7 +193,7 @@ Returns liquidity distribution across price ticks.
 
 ---
 
-#### 4. Get Inventory Ratio
+#### 3. Get Inventory Ratio
 ```
 GET /api/vaults/{chainId}/{vaultAddress}/inventory-ratio
 ```
@@ -230,7 +219,7 @@ Returns token balance distribution over time.
 
 ---
 
-#### 5. Get Price Impact
+#### 4. Get Price Impact
 ```
 GET /api/vaults/{chainId}/{vaultAddress}/price-impact
   ?tradeSize=5000
@@ -248,7 +237,7 @@ Returns price impact analysis for different trade sizes.
 
 ---
 
-#### 6. Get Fees History
+#### 5. Get Fees History
 ```
 GET /api/vaults/{chainId}/{vaultAddress}/fees-history
   ?startDate=2025-01-01
@@ -449,54 +438,6 @@ npm run lint
 - **Web3**: RainbowKit + wagmi + viem (mock mode)
 - **API**: Arrakis Indexer API v3
 
-## 💡 Tips & Best Practices
-
-1. **TypeScript**: All API responses are fully typed. Use the types in [lib/types.ts](lib/types.ts).
-
-2. **Error Handling**: Always handle loading and error states in your components.
-
-3. **Performance**: Use React's `useMemo` and `useCallback` for expensive operations.
-
-4. **Responsive Design**: Test on mobile, tablet, and desktop sizes.
-
-5. **Accessibility**: Use semantic HTML and ARIA labels where appropriate.
-
-6. **Code Organization**: Keep components small and focused. Create custom hooks for complex logic.
-
-## 🐛 Troubleshooting
-
-### Port already in use
-```bash
-# Kill the process on port 3000
-npx kill-port 3000
-
-# Or use a different port
-PORT=3001 npm run dev
-```
-
-### API errors
-- Check that `.env.local` exists and contains the correct API URL
-- Check the browser console for detailed error messages
-- Verify the vault address and chain ID are correct
-
-### Build errors
-```bash
-# Clear Next.js cache
-rm -rf .next
-
-# Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
-```
-
-## 📚 Additional Resources
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-- [Recharts Documentation](https://recharts.org/en-US/)
-- [RainbowKit Documentation](https://www.rainbowkit.com/docs/introduction)
-- [shadcn/ui Documentation](https://ui.shadcn.com/)
-
 ## 📤 Submission Guidelines
 
 When you're ready to submit:
@@ -525,7 +466,3 @@ When you're ready to submit:
 We're excited to see what you build! If you have any questions about the requirements or run into technical issues, don't hesitate to reach out.
 
 Remember: We're looking for both **design skills** and **technical implementation**. Show us your best work!
-
----
-
-Built with ❤️ for the Arrakis Product Designer Challenge

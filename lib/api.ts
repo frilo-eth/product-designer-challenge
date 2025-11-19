@@ -7,7 +7,6 @@
 
 import type {
   VaultMetadata,
-  VaultsListResponse,
   LiquidityProfile,
   InventoryRatio,
   PriceImpactResponse,
@@ -39,15 +38,6 @@ async function apiFetch<T>(url: string): Promise<T> {
 // ============================================
 // Vault API Functions
 // ============================================
-
-/**
- * Fetch list of all available vaults
- *
- * @returns List of vaults with basic metadata
- */
-export async function fetchVaultsList(): Promise<VaultsListResponse> {
-  return apiFetch<VaultsListResponse>(`${API_BASE}`)
-}
 
 /**
  * Fetch detailed metadata for a specific vault
