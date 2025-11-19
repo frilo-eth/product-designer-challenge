@@ -40,11 +40,10 @@ That's it! You should see the starter dashboard with 3 test vaults.
 
 ## 🎯 Quick Links
 
-**👉 [API Reference Guide](API_REFERENCE.md)** - Complete guide to all API functions with examples
+**👉 [API Reference Guide](API_REFERENCE.md)** - Complete guide to all API functions
 
 - [lib/api.ts](lib/api.ts) - All API helper functions
 - [lib/types.ts](lib/types.ts) - TypeScript type definitions
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development best practices
 
 ## 📁 Project Structure
 
