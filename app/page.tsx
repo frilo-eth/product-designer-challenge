@@ -2,7 +2,7 @@
  * Home Page - Arrakis Vault Dashboard
  *
  * This is the main starter page for the product designer challenge.
- * It displays 4 test vaults with their data fetched from the API.
+ * It displays 5 test vaults with their data fetched from the API.
  *
  * CHALLENGE INSTRUCTIONS:
  * =======================
@@ -81,7 +81,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-2">Welcome!</h2>
           <p className="text-muted-foreground max-w-2xl">
             This is your starting point for the Arrakis product designer
-            challenge. Below you&apos;ll find 4 test vaults with live data from the
+            challenge. Below you&apos;ll find 5 test vaults with live data from the
             Arrakis API. Your task is to create a beautiful, functional
             dashboard that showcases this data.
           </p>
