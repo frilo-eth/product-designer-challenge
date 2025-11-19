@@ -2,7 +2,7 @@
  * Home Page - Arrakis Vault Dashboard
  *
  * This is the main starter page for the product designer challenge.
- * It displays 3 test vaults with their data fetched from the API.
+ * It displays 4 test vaults with their data fetched from the API.
  *
  * CHALLENGE INSTRUCTIONS:
  * =======================
@@ -41,8 +41,6 @@ import { VaultCard } from '@/components/vault-card'
 import { TEST_VAULTS } from '@/lib/api'
 
 export default function Home() {
-  const ETHEREUM_MAINNET = 1
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -83,7 +81,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-2">Welcome!</h2>
           <p className="text-muted-foreground max-w-2xl">
             This is your starting point for the Arrakis product designer
-            challenge. Below you&apos;ll find 3 test vaults with live data from the
+            challenge. Below you&apos;ll find 4 test vaults with live data from the
             Arrakis API. Your task is to create a beautiful, functional
             dashboard that showcases this data.
           </p>
@@ -118,11 +116,11 @@ export default function Home() {
         <div>
           <h3 className="text-2xl font-bold mb-4">Test Vaults</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {TEST_VAULTS.map(address => (
+            {TEST_VAULTS.map(({ address, chainId }) => (
               <VaultCard
-                key={address}
+                key={`${chainId}-${address}`}
                 vaultAddress={address}
-                chainId={ETHEREUM_MAINNET}
+                chainId={chainId}
               />
             ))}
           </div>

@@ -143,12 +143,13 @@ export async function fetchFeesHistory(
 // ============================================
 
 /**
- * Default test vault addresses on Ethereum mainnet
+ * Default test vaults across multiple chains
  */
 export const TEST_VAULTS = [
-  '0xe20b37048bec200db1ef35669a4c8a9470ce3288',
-  '0x70a8be67675837db9b0c7c36cb629c8aab479e93',
-  '0x9f71298ee14176395c36797e65be1169e15f20d4',
+  { address: '0xe20b37048bec200db1ef35669a4c8a9470ce3288', chainId: 1 }, // Ethereum
+  { address: '0x70a8be67675837db9b0c7c36cb629c8aab479e93', chainId: 1 }, // Ethereum
+  { address: '0x9f71298ee14176395c36797e65be1169e15f20d4', chainId: 1 }, // Ethereum
+  { address: '0xb7f3c2dd386bb750d3e2132a1579d496c5faaf24', chainId: 56 }, // BSC - PancakeSwap V4
 ]
 
 /**
@@ -157,10 +158,8 @@ export const TEST_VAULTS = [
  * @returns Array of vault metadata for all test vaults
  */
 export async function fetchTestVaults(): Promise<VaultMetadata[]> {
-  const ETHEREUM_MAINNET = 1
-
-  const promises = TEST_VAULTS.map(address =>
-    fetchVaultDetails(ETHEREUM_MAINNET, address)
+  const promises = TEST_VAULTS.map(({ address, chainId }) =>
+    fetchVaultDetails(chainId, address)
   )
 
   return Promise.all(promises)

@@ -49,22 +49,28 @@ Returns historical fee earnings.
 
 ```typescript
 export const TEST_VAULTS = [
-  '0xe20b37048bec200db1ef35669a4c8a9470ce3288',
-  '0x70a8be67675837db9b0c7c36cb629c8aab479e93',
-  '0x9f71298ee14176395c36797e65be1169e15f20d4',
+  { address: '0xe20b37048bec200db1ef35669a4c8a9470ce3288', chainId: 1 }, // Ethereum
+  { address: '0x70a8be67675837db9b0c7c36cb629c8aab479e93', chainId: 1 }, // Ethereum
+  { address: '0x9f71298ee14176395c36797e65be1169e15f20d4', chainId: 1 }, // Ethereum
+  { address: '0xb7f3c2dd386bb750d3e2132a1579d496c5faaf24', chainId: 56 }, // BSC - PancakeSwap V4
 ]
 ```
 
-All on Ethereum mainnet (chainId: 1)
+**Note:** chainId 1 = Ethereum, chainId 56 = BSC (Binance Smart Chain)
 
 ---
 
 ## Usage
 
 ```typescript
-import { fetchVaultDetails } from '@/lib/api'
+import { fetchVaultDetails, TEST_VAULTS } from '@/lib/api'
 
+// Fetch a specific vault
 const vault = await fetchVaultDetails(1, '0xe20b37048bec200db1ef35669a4c8a9470ce3288')
+
+// Fetch using TEST_VAULTS
+const { address, chainId } = TEST_VAULTS[0]
+const vaultData = await fetchVaultDetails(chainId, address)
 ```
 
 **Note:** All functions are async and throw errors on failure. Handle them appropriately.
