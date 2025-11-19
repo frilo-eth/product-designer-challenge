@@ -103,7 +103,6 @@ Your task is to design and implement a beautiful, functional vault analytics das
 3. **Inventory Ratio**
    - Display token balance over time
    - Show historical trends
-   - Highlight rebalancing events
 
 4. **Price Impact Analysis**
    - Visualize price impact for different trade sizes
@@ -124,11 +123,11 @@ Your task is to design and implement a beautiful, functional vault analytics das
   - Background: Dark theme (`#0A0E1A`)
 
 - **User Experience**:
-  - Responsive design (mobile, tablet, desktop)
   - Loading states for async operations
   - Error handling with user-friendly messages
   - Smooth animations and transitions
   - Intuitive navigation
+  - Responsive design (optional - desktop-first is fine)
 
 - **Data Visualization**:
   - Use Recharts for charts
