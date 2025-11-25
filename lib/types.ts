@@ -16,6 +16,26 @@ export interface VaultToken {
   name?: string
 }
 
+export interface VaultSummary {
+  priceImpact?: {
+    timeAt: string
+    buy?: Record<string, number>
+    sell?: Record<string, number>
+  }
+  marketDepth2pr?: {
+    timeAt: string
+    buy: number
+    sell: number
+  } | null
+  volume30d?: {
+    usdValue: number
+  } | null
+  fees30d?: {
+    usdValue: number
+  } | null
+  vaultVsHolding?: any | null
+}
+
 export interface VaultMetadata {
   vaultAddress: string
   chainId: number
@@ -29,6 +49,10 @@ export interface VaultMetadata {
   feeTier?: string
   exchange?: string
   createdAt?: string
+  summary?: VaultSummary | null
+  timestamp?: string
+  lastUpdated?: string
+  cached?: boolean
 }
 
 // ============================================

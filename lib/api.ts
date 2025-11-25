@@ -11,6 +11,7 @@ import type {
   LiveInventoryResponse,
   VaultBalanceResponse,
   PriceImpactResponse,
+  PriceImpactDataPoint,
   FeesHistoryResponse,
   ApiError,
 } from './types'
@@ -24,11 +25,44 @@ async function apiFetch<T>(url: string): Promise<T> {
   const response = await fetch(url)
 
   if (!response.ok) {
+    let errorMessage = response.statusText
+    let errorDetails: any = null
+    
+    try {
+      const errorData = await response.json()
+      if (errorData.error) {
+        errorMessage = errorData.error
+      }
+      if (errorData.message) {
+        errorMessage = errorData.message
+      }
+      errorDetails = errorData
+    } catch {
+      // If JSON parsing fails, try text
+      try {
+        const errorText = await response.text()
+        errorMessage = errorText || errorMessage
+      } catch {
+        // Use default error message
+      }
+    }
+    
     const error: ApiError = {
       error: 'API Error',
-      message: `Failed to fetch: ${response.statusText}`,
+      message: errorMessage,
       statusCode: response.status,
     }
+    
+    if (typeof window !== 'undefined') {
+      console.error(`API Error [${response.status}]:`, {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        errorMessage,
+        errorDetails,
+      })
+    }
+    
     throw error
   }
 
@@ -121,22 +155,134 @@ export async function fetchVaultBalance(
  * @param endDate - End date in YYYY-MM-DD format
  * @returns Price impact data points
  */
+type ArrakisPriceImpactDatum = {
+  timestamp: string
+  buyImpacts?: Record<string, number>
+  sellImpacts?: Record<string, number>
+}
+
+type ArrakisPriceImpactResponse = {
+  chainId: number
+  vaultId: string
+  metadata?: {
+    requestedStartDate?: string
+    requestedEndDate?: string
+    usdValue?: number[]
+  }
+  data?: ArrakisPriceImpactDatum[]
+  timestamp?: string
+  lastUpdated?: string
+}
+
 export async function fetchPriceImpact(
   chainId: number,
   vaultAddress: string,
   tradeSize: number = 5000,
-  startDate: string = '2025-01-01',
-  endDate: string = '2025-11-19'
+  startDate?: string,
+  endDate?: string
 ): Promise<PriceImpactResponse> {
+  // Convert YYYY-MM-DD format to ISO format with time
+  const formatDateForAPI = (dateStr: string): string => {
+    // If already in ISO format, return as-is
+    if (dateStr.includes('T')) {
+      return dateStr
+    }
+    // Convert YYYY-MM-DD to ISO format
+    return `${dateStr}T00:00:00Z`
+  }
+
+  // Default to last 30 days if not provided
+  if (!startDate && !endDate) {
+    const defaultRange = getFeesHistoryDateRange(30)
+    startDate = defaultRange.startDate
+    endDate = defaultRange.endDate
+  } else if (!startDate) {
+    // If only endDate is provided, default startDate to 30 days before
+    const defaultRange = getFeesHistoryDateRange(30)
+    startDate = defaultRange.startDate
+  } else if (!endDate) {
+    // If only startDate is provided, default endDate to today
+    endDate = new Date().toISOString().split('T')[0]
+  }
+
+  // At this point, both dates are guaranteed to be defined
+  const formattedStartDate = formatDateForAPI(startDate!)
+  const formattedEndDate = formatDateForAPI(endDate!)
+
   const params = new URLSearchParams({
     tradeSize: tradeSize.toString(),
-    startDate,
-    endDate,
+    startDate: formattedStartDate,
+    endDate: formattedEndDate,
   })
 
-  return apiFetch<PriceImpactResponse>(
-    `${API_BASE}/${chainId}/${vaultAddress}/price-impact?${params}`
-  )
+  const url = `${API_BASE}/${chainId}/${vaultAddress}/price-impact?${params}`
+  
+  if (typeof window !== 'undefined') {
+    console.log('fetchPriceImpact:', {
+      chainId,
+      vaultAddress,
+      tradeSize,
+    startDate,
+    endDate,
+      formattedStartDate,
+      formattedEndDate,
+      url,
+    })
+  }
+
+  const raw = await apiFetch<ArrakisPriceImpactResponse>(url)
+
+  const normalized: PriceImpactDataPoint[] =
+    raw.data?.flatMap((entry) => {
+      const points: PriceImpactDataPoint[] = []
+
+      const addPoints = (
+        impacts: Record<string, number> | undefined,
+        direction: PriceImpactDataPoint['direction']
+      ) => {
+        if (!impacts) return
+
+        Object.entries(impacts).forEach(([size, value]) => {
+          const numeric = typeof value === 'number' ? value : Number(value)
+          if (!Number.isFinite(numeric)) {
+            return
+          }
+          points.push({
+            timestamp: entry.timestamp,
+            tradeSize: size,
+            priceImpactPercent: Math.abs(numeric),
+            priceImpactBps: Math.abs(numeric) * 100,
+            direction,
+          })
+        })
+      }
+
+      addPoints(entry.buyImpacts, 'buy')
+      addPoints(entry.sellImpacts, 'sell')
+
+      return points
+    }) ?? []
+
+  return {
+    data: normalized,
+    tradeSize: tradeSize.toString(),
+    startDate: raw.metadata?.requestedStartDate ?? formattedStartDate,
+    endDate: raw.metadata?.requestedEndDate ?? formattedEndDate,
+  }
+}
+
+/**
+ * Helper function to get date range for fees history
+ */
+export function getFeesHistoryDateRange(days: 7 | 30 | 365): { startDate: string; endDate: string } {
+  const endDate = new Date()
+  const startDate = new Date()
+  startDate.setDate(endDate.getDate() - days)
+  
+  return {
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+  }
 }
 
 /**
@@ -144,24 +290,86 @@ export async function fetchPriceImpact(
  *
  * @param chainId - The blockchain chain ID
  * @param vaultAddress - The vault contract address
- * @param startDate - Start date in YYYY-MM-DD format
- * @param endDate - End date in YYYY-MM-DD format
+ * @param startDate - Start date in YYYY-MM-DD format (will be converted to ISO). Defaults to 30 days ago.
+ * @param endDate - End date in YYYY-MM-DD format (will be converted to ISO). Defaults to today.
  * @returns Historical fee data
  */
 export async function fetchFeesHistory(
   chainId: number,
   vaultAddress: string,
-  startDate: string = '2025-01-01',
-  endDate: string = '2025-11-19'
+  startDate?: string,
+  endDate?: string
 ): Promise<FeesHistoryResponse> {
+  // Convert YYYY-MM-DD format to ISO format with time
+  const formatDateForAPI = (dateStr: string): string => {
+    // If already in ISO format, return as-is
+    if (dateStr.includes('T')) {
+      return dateStr
+    }
+    // Convert YYYY-MM-DD to ISO format
+    return `${dateStr}T00:00:00Z`
+  }
+
+  // Default to last 30 days if not provided
+  if (!startDate && !endDate) {
+    const defaultRange = getFeesHistoryDateRange(30)
+    startDate = defaultRange.startDate
+    endDate = defaultRange.endDate
+  } else if (!startDate) {
+    // If only endDate is provided, default startDate to 30 days before
+    const defaultRange = getFeesHistoryDateRange(30)
+    startDate = defaultRange.startDate
+  } else if (!endDate) {
+    // If only startDate is provided, default endDate to today
+    endDate = new Date().toISOString().split('T')[0]
+  }
+
+  // At this point, both dates are guaranteed to be defined
+  const formattedStartDate = formatDateForAPI(startDate!)
+  const formattedEndDate = formatDateForAPI(endDate!)
+  
   const params = new URLSearchParams({
-    startDate,
-    endDate,
+    startDate: formattedStartDate,
+    endDate: formattedEndDate,
   })
 
-  return apiFetch<FeesHistoryResponse>(
-    `${API_BASE}/${chainId}/${vaultAddress}/fees-history?${params}`
-  )
+  const url = `${API_BASE}/${chainId}/${vaultAddress}/fees-history?${params}`
+  
+  if (typeof window !== 'undefined') {
+    console.log('fetchFeesHistory:', { 
+      chainId, 
+      vaultAddress, 
+      startDate, 
+      endDate,
+      formattedStartDate,
+      formattedEndDate,
+      url 
+    })
+  }
+
+  return apiFetch<FeesHistoryResponse>(url)
+}
+
+/**
+ * Fetch fees history for last 7 days
+ */
+export async function fetchFeesHistory7D(
+  chainId: number,
+  vaultAddress: string
+): Promise<FeesHistoryResponse> {
+  const { startDate, endDate } = getFeesHistoryDateRange(7)
+  return fetchFeesHistory(chainId, vaultAddress, startDate, endDate)
+}
+
+/**
+ * Fetch fees history for last 365 days
+ */
+export async function fetchFeesHistory365D(
+  chainId: number,
+  vaultAddress: string
+): Promise<FeesHistoryResponse> {
+  const { startDate, endDate } = getFeesHistoryDateRange(365)
+  return fetchFeesHistory(chainId, vaultAddress, startDate, endDate)
 }
 
 // ============================================

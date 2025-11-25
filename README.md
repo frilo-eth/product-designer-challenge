@@ -22,11 +22,16 @@ A production-ready Next.js 14 starter repository for the Arrakis product designe
    npm install
    ```
 
-3. **Set up environment variables**:
+3. **Set up environment variables** (optional):
    ```bash
    cp .env.local.example .env.local
    ```
-   The default configuration should work out of the box.
+   The app works without environment variables. However, for full wallet functionality, add a WalletConnect project ID:
+   ```bash
+   # .env.local
+   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id_here
+   ```
+   Get a free project ID at [WalletConnect Cloud](https://cloud.walletconnect.com)
 
 4. **Run the development server**:
    ```bash
@@ -461,6 +466,190 @@ When you're ready to submit:
 4. **Deployment** (Optional):
    - Deploy to Vercel, Netlify, or your preferred platform
    - Include the deployment URL in your submission
+
+## 📝 Decision Log
+
+- **2025‑11‑25 – KPI change indicators**  
+  30-day delta percentages for Volume, Fees, and APR remain computed behind the scenes, but the dashboard now hides their on-card values until the upstream API stabilizes. A subtle indicator dot still exposes the captured dollar (or percentage for APR) change via tooltip so product stakeholders can access the data without risking misinterpretation.
+
+---
+
+## 🎨 Challenge Submission - Design Documentation
+
+### ✅ Feature Implementation Status
+
+All required features from the challenge have been implemented:
+
+| Feature | Status | Implementation |
+|---------|--------|----------------|
+| **Vault Overview** | ✅ Complete | `VaultMetadataCard` - TVL, APR, 30D Volume, 30D Fees with token pair icons |
+| **Liquidity Distribution** | ✅ Complete | `DistributionChartCard` - Interactive bar chart with current price marker, range bounds |
+| **Inventory Ratio** | ✅ Complete | `InventoryRatioCard` - Stacked bar chart with 24H/1W/30D timeframe selector |
+| **Price Impact Analysis** | ✅ Complete | `PriceImpactCard` - Dual-line chart with buy/sell curves, threshold indicators |
+| **Fee Earnings** | ✅ Complete | `FeesHistoryCard` - Historical fees with daily data visualization |
+
+### 🧱 Architecture Decisions
+
+#### Component Structure
+```
+components/
+├── dashboard/
+│   ├── data-viz/          # Chart cards (Distribution, Fees, Inventory, PriceImpact)
+│   ├── widgets/           # Metadata cards (VaultMetadataCard, MetricCard)
+│   └── layouts/           # App shell (Sidebar, TopBar)
+├── liquidity/             # Liquidity-specific components
+├── ui/                    # shadcn/ui primitives
+└── charts/                # Legacy chart components (v1)
+```
+
+#### Design Token System
+We established a consistent design token system matching the Figma specifications:
+```typescript
+const COLORS = {
+  surface: '#171312',      // Card backgrounds
+  background: '#0B0909',   // Page background
+  border: '#221C1B',       // Subtle borders
+  wormbone: '#F5EBE5',     // Primary text
+  muted: '#8E7571',        // Secondary text
+  accent: '#3BE38B',       // Active/current price
+  token0: '#2775CA',       // USDC blue
+  token1: '#103E36',       // Base token green
+}
+```
+
+#### Data Flow
+1. **API Layer** (`lib/api.ts`) - Centralized fetch functions with error handling
+2. **Custom Hooks** (`lib/hooks/`) - Data transformation and state management
+3. **Chart Components** - Recharts-based visualizations with custom tooltips
+
+### 🎯 UX Decisions
+
+#### Loading States
+- **Skeleton loaders** match exact heights of loaded content to prevent layout jumps
+- **Harmonic loading coordination** - Charts appear together when data is ready
+- **Graceful degradation** - Partial data displays with clear error indicators
+
+#### Empty/Error States
+- **"Data eaten by sandworms"** - Playful error illustration for fees chart (Figma-matched)
+- **Desert illustration** - Empty state for TVL chart (brand-aligned)
+- **"API Error" badges** - Clear visual indicators with tooltip explanations
+
+#### Tooltips
+- **Contextual information** - Each stat has an info tooltip explaining its meaning
+- **Chart tooltips** - Show precise values at hover point
+- **Price tooltips** - Display actual price at liquidity bars, not just percentages
+
+#### Interactions
+- **Price switcher** - Toggle between token0/token1 price display
+- **Timeframe selectors** - 24H/1W/30D for inventory ratio
+- **Hover states** - Bars dim when another is hovered for focus
+
+### ⚠️ Limits & Challenges
+
+#### API Constraints
+1. **Fees History** - Returns daily data only; 24H view shows minimal data points
+2. **Price Impact** - Data range fixed at $1K-$100K; we extrapolate for deep liquidity vaults
+3. **Some vaults return 400 errors** - Handled gracefully with error states
+
+#### Technical Constraints
+1. **Recharts limitations** - Custom X-axis labels rendered outside chart for better spacing
+2. **Next.js 14 hydration** - Some console warnings from RainbowKit (suppressed in dev)
+
+### 🚀 Improvements for Next Week
+
+If given another week, we would focus on:
+
+1. **Performance Optimizations**
+   - Implement React Query for data caching
+   - Add SWR for stale-while-revalidate patterns
+   - Prefetch vault data on hover
+
+2. **Additional Features**
+   - Historical TVL chart with timeframe selector
+   - Position calculator for LPs
+   - Comparison view between vaults
+   - Export data functionality
+
+3. **Polish**
+   - More granular loading states (shimmer effects)
+   - Keyboard navigation for accessibility
+   - Mobile-optimized layouts
+   - Dark/light theme toggle
+
+4. **Testing**
+   - Unit tests for data transformation functions
+   - E2E tests with Playwright
+   - Visual regression tests
+
+### 📦 Component Inventory
+
+#### New Components Created
+
+| Component | Location | Description |
+|-----------|----------|-------------|
+| `DistributionChartCard` | `components/dashboard/data-viz/` | TVL + liquidity distribution chart |
+| `VaultSupportInfoCard` | `components/dashboard/data-viz/` | Price, range, skew, status panel |
+| `FeesHistoryCard` | `components/dashboard/data-viz/` | 30D fees bar chart |
+| `InventoryRatioCard` | `components/dashboard/data-viz/` | Composition over time |
+| `PriceImpactCard` | `components/dashboard/data-viz/` | Buy/sell impact curves |
+| `VaultMetadataCard` | `components/dashboard/widgets/` | Header with pair info + KPIs |
+| `LiquidityProfileChart` | `components/liquidity/` | Alternative liquidity viz |
+| `InfoTooltip` | Inline | Hover tooltips for stats |
+| `TokenIcon` | Inline | Dynamic token SVG loader |
+
+#### Custom Hooks
+
+| Hook | Location | Purpose |
+|------|----------|---------|
+| `useChartData` | `lib/hooks/` | Chart data transformation |
+| `useLoadingCoordinator` | `lib/hooks/` | Synchronize loading states |
+
+### 🔗 Key URLs
+
+- **Vaults List**: `/vaults`
+- **Vault Dashboard**: `/vault/[chainId]/[address]`
+- **API Observability**: `/data-dashboard`
+- **Home**: `/`
+
+### 🙏 Acknowledgments
+
+Built with the Arrakis Indexer API, following the brand guidelines provided. Design inspiration from the Figma file with adaptations for technical feasibility and UX best practices.
+
+## 🔧 Troubleshooting
+
+### WebSocket / WalletConnect Errors
+
+If you see errors like:
+```
+Error: WebSocket connection closed abnormally with code: 3000 (Unauthorized: invalid key)
+```
+
+**Solution**: This is a WalletConnect configuration issue. The dashboard works fine without wallet connection. To fix:
+
+1. **Get a WalletConnect Project ID**:
+   - Visit [WalletConnect Cloud](https://cloud.walletconnect.com)
+   - Create a free account and new project
+   - Copy your project ID
+
+2. **Add to environment variables**:
+   ```bash
+   # Create .env.local file
+   echo "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id_here" > .env.local
+   ```
+
+3. **Restart the dev server**:
+   ```bash
+   npm run dev
+   ```
+
+**Note**: The error is suppressed in development mode and won't affect the main dashboard functionality. Wallet features are optional for this challenge.
+
+### API Errors
+
+If API calls fail:
+- Check your internet connection
+- Verify the Arrakis Indexer API is accessible
+- Some vaults may return 400 errors if data isn't available (this is expected)
 
 ## 🎉 Good Luck!
 
