@@ -1004,13 +1004,13 @@ export function DistributionChartCard({
         <div className="flex items-start justify-between flex-shrink-0 z-10">
           <div className="flex flex-col gap-[2px]">
             <span 
-              className="text-[12px] font-medium leading-[16px]"
-              style={{ color: 'rgba(236, 145, 23, 0.4)' }}
+              className="text-[10px] font-normal leading-[1.2]"
+              style={{ color: '#8E7571', letterSpacing: '0.2px' }}
             >
               Liquidity data is unavailable
             </span>
             <span 
-              className="text-[16px] sm:text-[18px] font-medium leading-[24px]"
+              className="text-[16px] font-bold leading-[25px]"
               style={{ color: '#EC9117' }}
             >
               What is abundant, can still be hidden
