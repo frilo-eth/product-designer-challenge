@@ -458,13 +458,13 @@ export function VaultSupportInfoCard({
           display: 'flex',
           padding: '16px',
           flexDirection: 'column',
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-start',
           alignItems: 'flex-start',
           gap: '20px',
           alignSelf: 'stretch',
+          minHeight: '460px',
           background: COLORS.surface,
           borderColor: COLORS.border,
-          minHeight: '420px', // Consistent height across all vaults
         }}
       >
         {/* Current Price skeleton - larger value */}
@@ -515,13 +515,13 @@ export function VaultSupportInfoCard({
         display: 'flex',
         padding: '16px',
         flexDirection: 'column',
-        justifyContent: 'flex-end',
+        justifyContent: 'flex-start',
         alignItems: 'flex-start',
         gap: '20px',
         alignSelf: 'stretch',
+        minHeight: '460px',
         background: COLORS.surface,
         borderColor: COLORS.border,
-        minHeight: '420px', // Consistent height across all vaults
       }}
     >
       {/* Current Price - Trio Pattern */}

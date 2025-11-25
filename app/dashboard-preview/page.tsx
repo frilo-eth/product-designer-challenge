@@ -880,7 +880,7 @@ function SupportInfoSkeleton() {
   return (
     <div 
       className="h-full rounded-[16px] border border-[#221C1B] bg-[#171312] p-4 flex flex-col gap-5"
-      style={{ minHeight: '420px' }}
+      style={{ minHeight: '460px' }}
     >
       {/* Current Price */}
       <div className="flex flex-col gap-1">
