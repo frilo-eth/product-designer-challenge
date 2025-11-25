@@ -37,11 +37,10 @@
 import * as React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { VaultCard } from '@/components/vault-card'
 import { TEST_VAULTS } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { BarChart3 } from 'lucide-react'
+import { BarChart3, Wallet } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -71,8 +70,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Connect Wallet Button */}
-            <ConnectButton />
+            {/* Wallet Button (placeholder - wallet optional for this demo) */}
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 border-white/10 hover:bg-white/5 text-white/70"
+            >
+              <Wallet className="h-4 w-4" />
+              Connect
+            </Button>
           </div>
         </div>
       </header>

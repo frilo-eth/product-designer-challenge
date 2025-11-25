@@ -1,50 +1,37 @@
 /**
  * Wallet Configuration with RainbowKit
  *
- * This file sets up the wallet connection using RainbowKit in MOCK MODE.
- * This means users can connect without a real wallet for testing purposes.
+ * This file sets up the wallet connection using RainbowKit.
+ * WalletConnect is disabled to avoid connection errors in demo mode.
  */
 
 'use client'
 
-import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { createConfig, http } from 'wagmi'
 import { mainnet, base, arbitrum } from 'wagmi/chains'
-
-// Suppress WalletConnect WebSocket errors in development when project ID is missing
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  const originalError = console.error
-  console.error = (...args: any[]) => {
-    const errorStr = args[0]?.toString() || ''
-    // Suppress WalletConnect-related errors
-    if (
-      errorStr.includes('WebSocket') ||
-      errorStr.includes('WalletConnect') ||
-      errorStr.includes('Unauthorized: invalid key') ||
-      errorStr.includes('code: 3000')
-    ) {
-      return // Silently ignore these errors in dev mode
-    }
-    originalError.apply(console, args)
-  }
-}
+import { injected } from 'wagmi/connectors'
 
 /**
- * Wagmi configuration with RainbowKit
+ * Wagmi configuration WITHOUT WalletConnect
  *
  * This configuration includes:
  * - Ethereum mainnet (for vault data)
  * - Base and Arbitrum (for potential multi-chain support)
- * - Mock connectors for demo purposes
+ * - Only injected wallets (MetaMask, etc.) - no WalletConnect
  * 
- * NOTE: WalletConnect requires a valid project ID.
- * Get one at: https://cloud.walletconnect.com
- * Add to .env.local: NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_id
+ * This avoids WalletConnect WebSocket errors when no project ID is configured.
  */
-export const config = getDefaultConfig({
-  appName: 'Arrakis Vault Dashboard',
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-mode',
+export const config = createConfig({
   chains: [mainnet, base, arbitrum],
-  ssr: true, // Enable server-side rendering
+  connectors: [
+    injected(), // Only use injected wallets (MetaMask, etc.)
+  ],
+  transports: {
+    [mainnet.id]: http(),
+    [base.id]: http(),
+    [arbitrum.id]: http(),
+  },
+  ssr: true,
 })
 
 /**
