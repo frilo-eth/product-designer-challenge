@@ -577,7 +577,7 @@ export default function DashboardPreviewPage() {
                     }
                     token0Symbol={selectedVault.token0Symbol}
                     token1Symbol={selectedVault.token1Symbol}
-                    loading={liquidityStatus === 'loading'}
+                    loading={liquidityStatus === 'idle' || liquidityStatus === 'loading'}
                   />
                 </div>
 
@@ -615,7 +615,7 @@ export default function DashboardPreviewPage() {
                     token1ValueUSD={liveInventory?.data?.tokens?.token1?.valueUSD}
                     token0Color={selectedVault.token0Color}
                     token1Color={selectedVault.token1Color}
-                    loading={liquidityStatus === 'loading'}
+                    loading={liquidityStatus === 'idle' || liquidityStatus === 'loading'}
                   />
                 </div>
                 </>
