@@ -313,7 +313,7 @@ export function FeesHistoryCard({
         {/* Header */}
         <div className="flex items-start justify-between flex-shrink-0 z-10">
           <div className="flex flex-col gap-[2px]">
-            <p className="text-[12px] leading-[14px] text-[#8E7571]">
+            <p className="text-[12px] text-[#8E7571]">
               Fee data is unavailable
             </p>
             <p 
@@ -348,7 +348,7 @@ export function FeesHistoryCard({
     <Card className="h-[260px] bg-[#171312] border-[#221C1B] text-white rounded-[16px] p-3 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex flex-col gap-0.5">
-        <p className="text-[12px] leading-[14px] text-[#8E7571]">
+        <p className="text-[12px] text-[#8E7571]">
           30D Fees
         </p>
         <h3 className="text-base font-medium text-[#F5EBE5] leading-6">
