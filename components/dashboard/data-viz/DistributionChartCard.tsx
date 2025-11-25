@@ -321,6 +321,19 @@ function EarningBadge() {
   )
 }
 
+// Desert illustration for chart empty/error state
+function DesertIllustration() {
+  return (
+    <img
+      src="/assets/illustrations/desert.svg"
+      alt="Desert landscape illustration"
+      className="w-full h-full object-cover"
+      loading="lazy"
+    />
+  )
+}
+
+
 // ============================================
 // Price Switcher Icon
 // ============================================
@@ -937,6 +950,39 @@ export function DistributionChartCard({
   }
 
   const hasChartData = chartData && chartData.length > 0
+  const hasTVL = typeof tvl === 'number' && tvl > 0
+
+  if (!hasChartData || !hasTVL) {
+    return (
+      <div
+        className="rounded-[16px] border h-full flex flex-col overflow-hidden"
+        style={{
+          padding: '12px',
+          background: COLORS.surface,
+          borderColor: COLORS.border,
+        }}
+      >
+        <div className="flex items-start justify-between flex-shrink-0">
+          <div className="flex flex-col gap-[2px]">
+            <span className="text-[12px]" style={{ color: COLORS.muted }}>
+              Liquidity data is unavailable
+            </span>
+            <span
+              className="text-[16px] font-bold leading-[25px]"
+              style={{ color: '#EC9117' }}
+            >
+              What is abundant, can still be hidden
+            </span>
+          </div>
+          <NoDataBadge />
+        </div>
+
+        <div className="flex-1 w-full overflow-hidden rounded-b-[4px] mt-3">
+          <DesertIllustration />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
