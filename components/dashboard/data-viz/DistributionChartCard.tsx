@@ -1004,8 +1004,7 @@ export function DistributionChartCard({
         <div className="flex items-start justify-between flex-shrink-0 z-10">
           <div className="flex flex-col gap-[2px]">
             <span 
-              className="text-[10px] font-normal leading-[1.2]"
-              style={{ color: '#8E7571', letterSpacing: '0.2px' }}
+              className="text-[12px] leading-[14px] text-[#8E7571]"
             >
               Liquidity data is unavailable
             </span>
