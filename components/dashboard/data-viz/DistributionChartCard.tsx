@@ -993,7 +993,7 @@ export function DistributionChartCard({
   if (!hasChartData || !hasTVL) {
     return (
       <div
-        className="rounded-[16px] border h-full flex flex-col overflow-hidden relative"
+        className="rounded-[16px] border h-full flex flex-col overflow-hidden"
         style={{
           padding: '12px',
           background: COLORS.surface,
@@ -1019,7 +1019,7 @@ export function DistributionChartCard({
         </div>
         
         {/* Desert illustration - positioned at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-[60%] overflow-hidden rounded-b-[16px]">
+        <div className="flex-1 w-full overflow-hidden rounded-b-[4px] mt-3">
           <DesertIllustration />
         </div>
       </div>

@@ -309,7 +309,7 @@ export function FeesHistoryCard({
   // Empty state - desert illustration design (matching Figma)
   if (!data || data.length === 0 || calculatedTotalFees === 0) {
     return (
-      <Card className="h-[260px] bg-[#171312] border-[#221C1B] text-white rounded-[16px] p-3 overflow-hidden flex flex-col relative">
+      <Card className="h-[260px] bg-[#171312] border-[#221C1B] text-white rounded-[16px] p-3 overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between flex-shrink-0 z-10">
           <div className="flex flex-col gap-[2px]">
@@ -337,7 +337,7 @@ export function FeesHistoryCard({
           </div>
         </div>
         {/* Desert illustration - fills available space while maintaining ratio */}
-        <div className="absolute bottom-0 left-0 right-0 h-[60%] overflow-hidden rounded-b-[16px]">
+        <div className="flex-1 w-full overflow-hidden rounded-b-[4px] mt-3">
           <DesertIllustration />
         </div>
       </Card>
