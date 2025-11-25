@@ -123,10 +123,10 @@ function FeesTooltip({
               {token0Symbol}
             </span>
             <span className="text-[12px] leading-[16px] text-[#F5EBE5] text-right tabular-nums">
-              {(shouldSwap ? data.fees1 : data.fees0).toLocaleString(undefined, {
+              {(shouldSwap ? data.fees1 : data.fees0)?.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              })}
+              }) ?? '—'}
             </span>
           </div>
         )}
@@ -136,10 +136,10 @@ function FeesTooltip({
               {token1Symbol}
             </span>
             <span className="text-[12px] leading-[16px] text-[#F5EBE5] text-right tabular-nums">
-              {(shouldSwap ? data.fees0 : data.fees1).toLocaleString(undefined, {
+              {(shouldSwap ? data.fees0 : data.fees1)?.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              })}
+              }) ?? '—'}
             </span>
           </div>
         )}
@@ -259,27 +259,16 @@ export function FeesHistoryCard({
   const timeframe: Timeframe = '1M'
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-  // Filter data by timeframe
+  // Filter data by timeframe (fixed to 30D)
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return []
 
     const now = new Date()
     const cutoffDate = new Date()
-
-    switch (timeframe) {
-      case '24h':
-        cutoffDate.setHours(now.getHours() - 24)
-        break
-      case '1W':
-        cutoffDate.setDate(now.getDate() - 7)
-        break
-      case '1M':
-        cutoffDate.setDate(now.getDate() - 30)
-        break
-    }
+    cutoffDate.setDate(now.getDate() - 30)
 
     return data.filter((point) => point.timestamp >= cutoffDate)
-  }, [data, timeframe])
+  }, [data])
 
   // Calculate total fees for the filtered timeframe
   const calculatedTotalFees = useMemo(() => {
@@ -324,10 +313,7 @@ export function FeesHistoryCard({
         {/* Header */}
         <div className="flex items-start justify-between flex-shrink-0 z-10">
           <div className="flex flex-col gap-[2px]">
-            <p 
-              className="text-[10px] font-normal leading-[1.2]"
-              style={{ color: '#8E7571', letterSpacing: '0.2px' }}
-            >
+            <p className="text-[12px] leading-[14px] text-[#8E7571]">
               Fee data is unavailable
             </p>
             <p 
@@ -350,8 +336,8 @@ export function FeesHistoryCard({
             </span>
           </div>
         </div>
-        {/* Desert illustration - positioned at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-[70%] overflow-hidden rounded-b-[16px]">
+        {/* Desert illustration - fills available space while maintaining ratio */}
+        <div className="absolute bottom-0 left-0 right-0 h-[60%] overflow-hidden rounded-b-[16px]">
           <DesertIllustration />
         </div>
       </Card>
