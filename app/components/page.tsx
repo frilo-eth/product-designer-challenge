@@ -18,7 +18,7 @@ const baseUrl =
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
 async function fetchFromApi<T>(path: string): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`, { cache: 'no-store', next: { revalidate: 60 } })
+  const res = await fetch(`${baseUrl}${path}`, { next: { revalidate: 60 } })
   if (!res.ok) {
     throw new Error(`Failed to fetch ${path}`)
   }

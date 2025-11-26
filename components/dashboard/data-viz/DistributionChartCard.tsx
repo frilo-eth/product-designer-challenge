@@ -33,12 +33,15 @@ const COLORS = {
 // Helper Functions
 // ============================================
 /**
- * Format price with appropriate precision
+ * Format price with appropriate precision and thousand separators
  * For very small values (< 0.0001), show more digits to avoid showing 0.0000
  */
 function formatPrice(value: number): string {
   if (value >= 1) {
-    return value.toFixed(4)
+    const fixed = value.toFixed(4)
+    const [intPart, decPart] = fixed.split('.')
+    const intWithCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return decPart ? `${intWithCommas}.${decPart}` : intWithCommas
   } else if (value >= 0.0001) {
     return value.toFixed(4)
   } else if (value >= 0.00001) {

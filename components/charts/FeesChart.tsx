@@ -20,17 +20,6 @@ interface FeesChartProps {
 }
 
 export function FeesChart({ data, token0Symbol = 'Token0', token1Symbol = 'Token1' }: FeesChartProps) {
-  // Debug logging
-  if (typeof window !== 'undefined') {
-    console.log('FeesChart render:', { 
-      hasData: !!data, 
-      dataLength: data?.length, 
-      firstPoint: data?.[0],
-      token0Symbol,
-      token1Symbol 
-    })
-  }
-
   if (!data || data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center text-muted-foreground">
@@ -68,12 +57,11 @@ export function FeesChart({ data, token0Symbol = 'Token0', token1Symbol = 'Token
 
   // Validate data structure
   if (data[0]?.feesUSD === undefined && data[0]?.feesUSD !== 0) {
-    console.warn('FeesChart: Invalid data structure', { firstPoint: data[0], dataLength: data.length })
     return (
       <div className="h-64 flex items-center justify-center text-muted-foreground">
         <div className="text-center">
           <p>Invalid data format</p>
-          <p className="text-xs mt-2 opacity-70">Check console for details</p>
+          <p className="text-xs mt-2 opacity-70">Expected feesUSD property in data points</p>
         </div>
       </div>
     )

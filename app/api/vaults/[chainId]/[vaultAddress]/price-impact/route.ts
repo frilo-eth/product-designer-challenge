@@ -74,15 +74,6 @@ export async function GET(
 
     const url = `${INDEXER_API_URL}/indexer/private/${chainId}/${vaultAddress}/historical/price-impact?${queryParams}`
 
-    console.log('Fetching price impact from Arrakis API:', {
-      chainId,
-      vaultAddress,
-      tradeSize,
-      startDate,
-      endDate,
-      url,
-    })
-
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -124,13 +115,6 @@ export async function GET(
     }
 
     const raw: ArrakisPriceImpactResponse = await response.json()
-
-    console.log('Price impact API response:', {
-      chainId,
-      vaultAddress,
-      dataPoints: raw.data?.length ?? 0,
-      samplePoint: raw.data?.[0] ?? 'N/A',
-    })
 
     // Normalize into flat array expected by frontend
     const normalized: PriceImpactDataPoint[] =

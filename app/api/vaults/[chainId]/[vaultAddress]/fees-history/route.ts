@@ -54,14 +54,6 @@ export async function GET(
 
     const url = `${INDEXER_API_URL}/indexer/private/${chainId}/${vaultAddress}/historical/fees?${queryParams}`
 
-    console.log('Fetching fees history from Arrakis API:', {
-      chainId,
-      vaultAddress,
-      startDate,
-      endDate,
-      url,
-    })
-
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -111,27 +103,18 @@ export async function GET(
     // If token symbols not in fees response, fetch from vault details
     if (!token0Symbol || !token1Symbol) {
       try {
-        // Use the correct indexer endpoint for vault details
         const vaultUrl = `${INDEXER_API_URL}/indexer/private/${chainId}/${vaultAddress}/details?refresh=false`
-        console.log('Fetching vault metadata for token symbols:', vaultUrl)
         const vaultResponse = await fetch(vaultUrl, {
           headers: { 'Content-Type': 'application/json' },
           next: { revalidate: 3600 }, // Cache vault metadata for 1 hour
         })
         if (vaultResponse.ok) {
           const vaultData = await vaultResponse.json()
-          // Token symbols are nested in data.tokens.token0/token1
-          console.log('Vault metadata response:', { 
-            token0: vaultData?.data?.tokens?.token0?.symbol, 
-            token1: vaultData?.data?.tokens?.token1?.symbol 
-          })
           token0Symbol = vaultData?.data?.tokens?.token0?.symbol || token0Symbol
           token1Symbol = vaultData?.data?.tokens?.token1?.symbol || token1Symbol
-        } else {
-          console.warn('Vault metadata fetch failed:', vaultResponse.status, vaultResponse.statusText)
         }
-      } catch (e) {
-        console.warn('Failed to fetch vault metadata for token symbols:', e)
+      } catch {
+        // Silently continue - token symbols are optional enhancement
       }
     }
 
@@ -166,38 +149,13 @@ export async function GET(
       token1Symbol,
     }
 
-    // Log the response to help debug
-    const samplePoint = transformedData.data[0]
+    // Check if data exists but is all zeros
     const allZeros = transformedData.data.every((p: any) => 
       (!p.feesUSD || parseFloat(p.feesUSD) === 0) && 
       (!p.volumeUSD || parseFloat(p.volumeUSD) === 0)
     )
-    
-    console.log('Fees history API response (transformed):', {
-      chainId,
-      vaultAddress,
-      dataPoints: transformedData.data.length,
-      totalFees: transformedData.totalFees,
-      dateRange: `${transformedData.startDate} to ${transformedData.endDate}`,
-      token0Symbol: transformedData.token0Symbol,
-      token1Symbol: transformedData.token1Symbol,
-      samplePoint,
-      allZeros,
-    })
 
-    // Check if data exists but is all zeros
     if (transformedData.data.length > 0 && allZeros) {
-      const dateRangeInfo = {
-        chainId,
-        vaultAddress,
-        dataPoints: transformedData.data.length,
-        dateRange: `${transformedData.startDate} to ${transformedData.endDate}`,
-        summary: data?.summary,
-        triedExtendedRange: !!extendedRange,
-      }
-      
-      console.warn('Fees history API returned data but all values are zero:', dateRangeInfo)
-      
       // If all zeros and summary also shows zero/null, this vault likely has no fees
       // Add flags to help the frontend show a better message
       if (data?.summary?.totalFeesUSD === 0 || data?.summary?.totalFeesUSD === null || data?.summary?.totalFeesUSD === undefined) {

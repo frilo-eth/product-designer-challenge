@@ -801,8 +801,5 @@ If API calls fail:
 - Verify the Arrakis Indexer API is accessible
 - Some vaults may return 400 errors if data isn't available (this is expected)
 
-## 🎉 Good Luck!
-
-We're excited to see what you build! If you have any questions about the requirements or run into technical issues, don't hesitate to reach out.
-
-Remember: We're looking for both **design skills** and **technical implementation**. Show us your best work!
+Thank you for inviting me
+[Orlando](https://orlando.design/)

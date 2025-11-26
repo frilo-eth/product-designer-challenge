@@ -216,19 +216,6 @@ export async function fetchPriceImpact(
   })
 
   const url = `${API_BASE}/${chainId}/${vaultAddress}/price-impact?${params}`
-  
-  if (typeof window !== 'undefined') {
-    console.log('fetchPriceImpact:', {
-      chainId,
-      vaultAddress,
-      tradeSize,
-    startDate,
-    endDate,
-      formattedStartDate,
-      formattedEndDate,
-      url,
-    })
-  }
 
   const raw = await apiFetch<ArrakisPriceImpactResponse>(url)
 
@@ -334,18 +321,6 @@ export async function fetchFeesHistory(
   })
 
   const url = `${API_BASE}/${chainId}/${vaultAddress}/fees-history?${params}`
-  
-  if (typeof window !== 'undefined') {
-    console.log('fetchFeesHistory:', { 
-      chainId, 
-      vaultAddress, 
-      startDate, 
-      endDate,
-      formattedStartDate,
-      formattedEndDate,
-      url 
-    })
-  }
 
   return apiFetch<FeesHistoryResponse>(url)
 }
