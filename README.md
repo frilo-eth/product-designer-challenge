@@ -763,43 +763,5 @@ This is the heart of the dashboard and the single most important signal for vaul
 
 ---
 
-### 🙏 Acknowledgments
-
-## 🔧 Troubleshooting
-
-### WebSocket / WalletConnect Errors
-
-If you see errors like:
-```
-Error: WebSocket connection closed abnormally with code: 3000 (Unauthorized: invalid key)
-```
-
-**Solution**: This is a WalletConnect configuration issue. The dashboard works fine without wallet connection. To fix:
-
-1. **Get a WalletConnect Project ID**:
-   - Visit [WalletConnect Cloud](https://cloud.walletconnect.com)
-   - Create a free account and new project
-   - Copy your project ID
-
-2. **Add to environment variables**:
-   ```bash
-   # Create .env.local file
-   echo "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id_here" > .env.local
-   ```
-
-3. **Restart the dev server**:
-   ```bash
-   npm run dev
-   ```
-
-**Note**: The error is suppressed in development mode and won't affect the main dashboard functionality. Wallet features are optional for this challenge.
-
-### API Errors
-
-If API calls fail:
-- Check your internet connection
-- Verify the Arrakis Indexer API is accessible
-- Some vaults may return 400 errors if data isn't available (this is expected)
-
 Thank you for inviting me
 [Orlando](https://orlando.design/)

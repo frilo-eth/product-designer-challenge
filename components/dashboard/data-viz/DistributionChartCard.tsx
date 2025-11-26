@@ -1150,12 +1150,15 @@ export function DistributionChartCard({
       >
         <div className="flex items-start justify-between flex-shrink-0">
           <div className="flex flex-col gap-[2px]">
-            <span className="text-[12px]" style={{ color: COLORS.muted }}>
-              Liquidity data is unavailable
+            <span 
+              className="text-[12px]"
+              style={{ color: 'rgba(236, 145, 23, 0.15)' }}
+            >
+              TVL data unavailable
             </span>
             <span
               className="text-[16px] font-bold leading-[25px]"
-              style={{ color: '#EC9117' }}
+              style={{ color: '#8D560C' }}
             >
               What is abundant, can still be hidden
             </span>
