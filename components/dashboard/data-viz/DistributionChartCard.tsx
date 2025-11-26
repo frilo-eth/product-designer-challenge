@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -30,6 +30,28 @@ const COLORS = {
 }
 
 // ============================================
+// Helper Functions
+// ============================================
+/**
+ * Format price with appropriate precision
+ * For very small values (< 0.0001), show more digits to avoid showing 0.0000
+ */
+function formatPrice(value: number): string {
+  if (value >= 1) {
+    return value.toFixed(4)
+  } else if (value >= 0.0001) {
+    return value.toFixed(4)
+  } else if (value >= 0.00001) {
+    return value.toFixed(6)
+  } else if (value >= 0.000001) {
+    return value.toFixed(8)
+  } else {
+    // For extremely small values, use scientific notation or more precision
+    return value.toFixed(10).replace(/\.?0+$/, '')
+  }
+}
+
+// ============================================
 // Interfaces
 // ============================================
 export interface DistributionChartCardProps {
@@ -50,6 +72,10 @@ export interface DistributionChartCardProps {
   token0Symbol?: string
   token1Symbol?: string
   
+  // Price display format
+  invertValue?: boolean
+  showToken0PerToken1?: boolean
+  
   loading?: boolean
 }
 
@@ -57,8 +83,8 @@ export interface VaultSupportInfoCardProps {
   token0Symbol?: string
   token1Symbol?: string
   priceRatio?: number
-  leftBound: number
-  rightBound: number
+  leftBound?: number
+  rightBound?: number
   skewPercent?: number
   skewDirection?: 'bullish' | 'bearish' | 'neutral'
   status?: 'balanced' | 'unbalanced'
@@ -69,9 +95,21 @@ export interface VaultSupportInfoCardProps {
   token1Percent?: number
   token0ValueUSD?: number
   token1ValueUSD?: number
+  token0Amount?: string
+  token1Amount?: string
+  token0Decimals?: number
+  token1Decimals?: number
   token0Color?: string
   token1Color?: string
   loading?: boolean
+  /** Whether liquidity profile data is available */
+  hasLiquidityData?: boolean
+  /** Whether live inventory data is available */
+  hasInventoryData?: boolean
+  /** Invert the price value (show 1/ratio instead of ratio) */
+  invertValue?: boolean
+  /** Show "token0 per token1" label instead of "token1 per token0" */
+  showToken0PerToken1?: boolean
 }
 
 // ============================================
@@ -210,6 +248,8 @@ function ChartTooltip({
   currentPriceValue,
   token0Symbol,
   token1Symbol,
+  invertValue,
+  showToken0PerToken1,
 }: any) {
   if (!active || !payload || payload.length === 0) return null
 
@@ -223,12 +263,10 @@ function ChartTooltip({
     : `$${data.liquidity.toFixed(0)}`
 
   // Calculate the actual price at this bar's percentage deviation
-  const priceAtBar = currentPriceValue ? currentPriceValue * (1 + data.pct / 100) : null
-  const priceAtBarFormatted = priceAtBar 
-    ? priceAtBar >= 1 
-      ? priceAtBar.toFixed(4) 
-      : priceAtBar.toFixed(6)
-    : '—'
+  // First calculate in API format, then invert if needed
+  const priceAtBarRaw = currentPriceValue ? currentPriceValue * (1 + data.pct / 100) : null
+  const priceAtBar = priceAtBarRaw && invertValue ? 1 / priceAtBarRaw : priceAtBarRaw
+  const priceAtBarFormatted = priceAtBar ? formatPrice(priceAtBar) : '—'
 
   // If near current price, show enhanced tooltip matching Figma
   if (isCurrentPrice) {
@@ -296,7 +334,7 @@ function ChartTooltip({
         <div className="flex flex-col gap-0.5">
           <span className="text-[10px]" style={{ color: COLORS.muted }}>Price at this level</span>
           <span className="text-[14px] font-medium" style={{ color: COLORS.wormbone }}>
-            {priceAtBarFormatted} {token1Symbol} per {token0Symbol}
+            {priceAtBarFormatted} {showToken0PerToken1 ? token0Symbol : token1Symbol} per {showToken0PerToken1 ? token1Symbol : token0Symbol}
           </span>
         </div>
       </div>
@@ -317,6 +355,23 @@ function EarningBadge() {
       }}
     >
       Earning
+    </div>
+  )
+}
+
+// ============================================
+// No Data Badge - matches Earning badge style
+// ============================================
+function NoDataBadge() {
+  return (
+    <div
+      className="px-2 py-1 rounded-[6px] text-[12px] font-normal"
+      style={{
+        background: 'rgba(236, 145, 23, 0.12)',
+        color: '#EC9117',
+      }}
+    >
+      No data
     </div>
   )
 }
@@ -403,33 +458,76 @@ export function VaultSupportInfoCard({
   leftBound,
   rightBound,
   skewPercent,
-  skewDirection = 'neutral',
-  status = 'balanced',
+  skewDirection,
+  status,
   statusTolerance = 2,
   buyLimit,
   sellLimit,
-  token0Percent = 50,
-  token1Percent = 50,
+  token0Percent,
+  token1Percent,
   token0ValueUSD,
   token1ValueUSD,
+  token0Amount,
+  token1Amount,
+  token0Decimals,
+  token1Decimals,
   token0Color = COLORS.token0,
   token1Color = COLORS.token1,
   loading,
+  hasLiquidityData = true,
+  hasInventoryData = true,
+  invertValue = false,
+  showToken0PerToken1 = false,
 }: VaultSupportInfoCardProps) {
-  const [priceInverted, setPriceInverted] = useState(false)
+  // Toggle state for user to switch between price formats
+  const [userToggled, setUserToggled] = useState(false)
+  
+  // Reset user toggle when vault changes (detected by token symbols changing)
+  useEffect(() => {
+    setUserToggled(false)
+  }, [token0Symbol, token1Symbol])
+  
+  // Check if we have liquidity data (leftBound and rightBound defined means we have data)
+  const hasRangeData = hasLiquidityData && leftBound !== undefined && rightBound !== undefined
 
-  const displayPrice = priceRatio
-    ? priceInverted
-      ? (1 / priceRatio).toFixed(4)
-      : priceRatio.toFixed(4)
+  // Calculate price from inventory amounts if available (more accurate than API price)
+  const calculatedPriceRatio = useMemo(() => {
+    if (token0Amount && token1Amount && token0Decimals !== undefined && token1Decimals !== undefined) {
+      const amount0 = parseFloat(token0Amount) / Math.pow(10, token0Decimals)
+      const amount1 = parseFloat(token1Amount) / Math.pow(10, token1Decimals)
+      if (amount0 > 0 && amount1 > 0) {
+        // Calculate price: token1 per token0 (standard format)
+        return amount1 / amount0
+      }
+    }
+    return null
+  }, [token0Amount, token1Amount, token0Decimals, token1Decimals])
+
+  // Use calculated price from inventory if available, otherwise use API priceRatio
+  // But only if we have liquidity data (for VSN/ETH, show "—" if no liquidity)
+  const effectivePriceRatio = hasLiquidityData 
+    ? (calculatedPriceRatio ?? priceRatio)
+    : null
+
+  // Price display logic:
+  // - invertValue: when true, show 1/ratio instead of ratio
+  // - showToken0PerToken1: when true, show "token0 per token1" label
+  // - userToggled: flips both when user clicks toggle
+  const effectiveInvertValue = invertValue !== userToggled
+  const effectiveShowToken0PerToken1 = showToken0PerToken1 !== userToggled
+  
+  const displayPrice = effectivePriceRatio
+    ? effectiveInvertValue
+      ? formatPrice(1 / effectivePriceRatio)  // inverted: show 1/ratio
+      : formatPrice(effectivePriceRatio)     // normal: show ratio as-is
     : '—'
 
-  const priceLabel = priceInverted
-    ? `${token0Symbol} per ${token1Symbol}`
-    : `${token1Symbol} per ${token0Symbol}`
+  const priceLabel = effectiveShowToken0PerToken1
+    ? `${token0Symbol} per ${token1Symbol}`  // "token0 per token1"
+    : `${token1Symbol} per ${token0Symbol}`  // "token1 per token0"
 
   // Range classification with descriptions (Wide > 100%, Narrow 20-100%, Tight < 20%)
-  const rangeSpan = Math.abs(rightBound) + Math.abs(leftBound)
+  const rangeSpan = hasRangeData ? Math.abs(rightBound!) + Math.abs(leftBound!) : 0
   const rangeClass = rangeSpan > 100 ? 'Wide' : rangeSpan > 20 ? 'Narrow' : 'Tight'
   
   const rangeTooltipContent: Record<string, string> = {
@@ -438,6 +536,9 @@ export function VaultSupportInfoCard({
     Tight: 'Highly focused price band. Maximum fee concentration but minimal buffer.',
   }
 
+  // Unavailable tooltip content
+  const unavailableTooltip = 'Liquidity profile data is currently unavailable for this vault.'
+
   // Skew tooltip content - simplified per spec
   const skewTooltipContent: Record<string, string> = {
     bullish: 'More liquidity placed above the current price.',
@@ -445,12 +546,13 @@ export function VaultSupportInfoCard({
     neutral: 'Liquidity distributed evenly.',
   }
 
-  // Skew label and color
-  const skewLabel = skewDirection === 'bullish' ? '↗ Bullish' : skewDirection === 'bearish' ? '↘ Bearish' : '→ Neutral'
-  const skewColor = skewDirection === 'bullish' ? COLORS.accent : skewDirection === 'bearish' ? '#FF5C5C' : COLORS.muted
+  // Skew label and color - only show if we have data
+  const effectiveSkewDirection = hasRangeData ? (skewDirection || 'neutral') : undefined
+  const skewLabel = effectiveSkewDirection === 'bullish' ? '↗ Bullish' : effectiveSkewDirection === 'bearish' ? '↘ Bearish' : effectiveSkewDirection === 'neutral' ? '→ Neutral' : undefined
+  const skewColor = effectiveSkewDirection === 'bullish' ? COLORS.accent : effectiveSkewDirection === 'bearish' ? '#FF5C5C' : COLORS.muted
 
-  // Status display - map status to display label
-  const statusDisplayLabel = status === 'balanced' ? 'Balanced' : status === 'unbalanced' ? 'Rebalancing' : 'Out of Range'
+  // Status display - map status to display label (only if we have data)
+  const statusDisplayLabel = status === 'balanced' ? 'Balanced' : status === 'unbalanced' ? 'Rebalancing' : status ? 'Out of Range' : undefined
   
   // Status tooltip content per spec
   const statusTooltipMap: Record<string, string> = {
@@ -458,7 +560,7 @@ export function VaultSupportInfoCard({
     unbalanced: 'Composition moved outside tolerance. System is restoring target balance.',
     outOfRange: 'Price left the active range. Liquidity is no longer earning fees until re-entry.',
   }
-  const statusTooltipContent = statusTooltipMap[status] || statusTooltipMap.balanced
+  const statusTooltipContent = status ? (statusTooltipMap[status] || statusTooltipMap.balanced) : unavailableTooltip
 
   // Tolerance tooltip
   const toleranceTooltip = 'Allowed drift around the target balance before rebalancing triggers.'
@@ -466,7 +568,7 @@ export function VaultSupportInfoCard({
   if (loading) {
     return (
       <div
-        className="rounded-[16px] border h-full"
+        className="rounded-[16px] border"
         style={{
           display: 'flex',
           padding: '16px',
@@ -475,7 +577,7 @@ export function VaultSupportInfoCard({
           alignItems: 'flex-start',
           gap: '20px',
           alignSelf: 'stretch',
-          minHeight: '460px',
+          height: '460px',
           background: COLORS.surface,
           borderColor: COLORS.border,
         }}
@@ -523,7 +625,7 @@ export function VaultSupportInfoCard({
 
   return (
     <div
-      className="rounded-[16px] border h-full"
+      className="rounded-[16px] border"
       style={{
         display: 'flex',
         padding: '16px',
@@ -532,7 +634,7 @@ export function VaultSupportInfoCard({
         alignItems: 'flex-start',
         gap: '20px',
         alignSelf: 'stretch',
-        minHeight: '460px',
+        height: '460px',
         background: COLORS.surface,
         borderColor: COLORS.border,
       }}
@@ -563,7 +665,7 @@ export function VaultSupportInfoCard({
           {displayPrice}
         </span>
         <button
-          onClick={() => setPriceInverted(!priceInverted)}
+          onClick={() => setUserToggled(!userToggled)}
           className="flex items-center gap-1 leading-[20px] hover:opacity-80 transition-opacity w-fit"
           style={{ 
             color: COLORS.muted,
@@ -599,18 +701,24 @@ export function VaultSupportInfoCard({
             fontWeight: 500,
           }}
         >
-          {leftBound.toFixed(0)}% — +{rightBound.toFixed(0)}%
+          {hasRangeData ? `${leftBound!.toFixed(0)}% — +${rightBound!.toFixed(0)}%` : '—'}
         </span>
         <InfoTooltip
           content={
-            <div className="flex flex-col gap-1">
-              <span className="text-[12px] font-medium" style={{ color: COLORS.wormbone }}>
-                {rangeClass} Range
-              </span>
+            hasRangeData ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-[12px] font-medium" style={{ color: COLORS.wormbone }}>
+                  {rangeClass} Range
+                </span>
+                <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                  {rangeTooltipContent[rangeClass as keyof typeof rangeTooltipContent]}
+                </span>
+              </div>
+            ) : (
               <span className="text-[11px]" style={{ color: COLORS.muted }}>
-                {rangeTooltipContent[rangeClass as keyof typeof rangeTooltipContent]}
+                {unavailableTooltip}
               </span>
-            </div>
+            )
           }
         >
           <span 
@@ -621,7 +729,7 @@ export function VaultSupportInfoCard({
               fontWeight: 400,
             }}
           >
-            {rangeClass}
+            {hasRangeData ? rangeClass : 'Unavailable'}
           </span>
         </InfoTooltip>
       </div>
@@ -649,29 +757,35 @@ export function VaultSupportInfoCard({
             fontWeight: 500,
           }}
         >
-          {skewPercent?.toFixed(2) || '0.00'}%
+          {hasRangeData ? `${skewPercent?.toFixed(2) || '0.00'}%` : '—'}
         </span>
         <InfoTooltip
           content={
-            <div className="flex flex-col gap-1">
-              <span className="text-[12px] font-medium" style={{ color: skewColor }}>
-                {skewLabel}
-              </span>
+            hasRangeData && effectiveSkewDirection ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-[12px] font-medium" style={{ color: skewColor }}>
+                  {skewLabel}
+                </span>
+                <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                  {skewTooltipContent[effectiveSkewDirection]}
+                </span>
+              </div>
+            ) : (
               <span className="text-[11px]" style={{ color: COLORS.muted }}>
-                {skewTooltipContent[skewDirection]}
+                {unavailableTooltip}
               </span>
-            </div>
+            )
           }
         >
           <span 
             className="leading-[20px] " 
             style={{ 
-              color: skewColor,
+              color: hasRangeData ? skewColor : COLORS.muted,
               fontSize: '14px',
               fontWeight: 400,
             }}
           >
-            {skewLabel}
+            {hasRangeData && skewLabel ? skewLabel : 'Unavailable'}
           </span>
         </InfoTooltip>
       </div>
@@ -706,26 +820,32 @@ export function VaultSupportInfoCard({
               fontWeight: 500,
             }}
           >
-            {statusDisplayLabel}
+            {hasRangeData && statusDisplayLabel ? statusDisplayLabel : '—'}
           </span>
         </InfoTooltip>
         <InfoTooltip
           content={
-            <div className="flex flex-col gap-1">
+            hasRangeData ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                  {toleranceTooltip}
+                </span>
+                {(buyLimit !== undefined || sellLimit !== undefined) && (
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[10px]" style={{ color: COLORS.accent }}>
+                      Buy: {buyLimit?.toFixed(2) || statusTolerance}%
+                    </span>
+                    <span className="text-[10px]" style={{ color: '#FF5C5C' }}>
+                      Sell: {sellLimit?.toFixed(2) || statusTolerance}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
               <span className="text-[11px]" style={{ color: COLORS.muted }}>
-                {toleranceTooltip}
+                {unavailableTooltip}
               </span>
-              {(buyLimit !== undefined || sellLimit !== undefined) && (
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[10px]" style={{ color: COLORS.accent }}>
-                    Buy: {buyLimit?.toFixed(2) || statusTolerance}%
-                  </span>
-                  <span className="text-[10px]" style={{ color: '#FF5C5C' }}>
-                    Sell: {sellLimit?.toFixed(2) || statusTolerance}%
-                  </span>
-                </div>
-              )}
-            </div>
+            )
           }
         >
           <span 
@@ -736,7 +856,7 @@ export function VaultSupportInfoCard({
               fontWeight: 400,
             }}
           >
-            +/-{statusTolerance}% Tolerance
+            {hasRangeData ? `+/-${statusTolerance}% Tolerance` : 'Unavailable'}
           </span>
         </InfoTooltip>
       </div>
@@ -759,58 +879,111 @@ export function VaultSupportInfoCard({
         
         {/* Percentage labels - main value */}
         <div className="flex items-center justify-between self-stretch">
-          <span 
-            className="leading-[22px]"
-            style={{ 
-              color: COLORS.wormbone,
-              fontSize: '16px',
-              fontWeight: 500,
-            }}
+          <InfoTooltip
+            content={
+              hasInventoryData ? (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] font-medium" style={{ color: COLORS.wormbone }}>
+                    {token0Symbol} Allocation
+                  </span>
+                  <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                    {token0Percent}% of vault composition
+                  </span>
+                </div>
+              ) : (
+                <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                  {unavailableTooltip}
+                </span>
+              )
+            }
           >
-            {token0Percent}%
-          </span>
-          <span 
-            className="leading-[22px]"
-            style={{ 
-              color: COLORS.wormbone,
-              fontSize: '16px',
-              fontWeight: 500,
-            }}
+            <span 
+              className="leading-[22px]"
+              style={{ 
+                color: COLORS.wormbone,
+                fontSize: '16px',
+                fontWeight: 500,
+              }}
+            >
+              {hasInventoryData && token0Percent !== undefined ? `${token0Percent}%` : '—'}
+            </span>
+          </InfoTooltip>
+          <InfoTooltip
+            content={
+              hasInventoryData ? (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] font-medium" style={{ color: COLORS.wormbone }}>
+                    {token1Symbol} Allocation
+                  </span>
+                  <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                    {token1Percent}% of vault composition
+                  </span>
+                </div>
+              ) : (
+                <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                  {unavailableTooltip}
+                </span>
+              )
+            }
           >
-            {token1Percent}%
-          </span>
+            <span 
+              className="leading-[22px]"
+              style={{ 
+                color: COLORS.wormbone,
+                fontSize: '16px',
+                fontWeight: 500,
+              }}
+            >
+              {hasInventoryData && token1Percent !== undefined ? `${token1Percent}%` : '—'}
+            </span>
+          </InfoTooltip>
         </div>
 
-        {/* Composition bar */}
+        {/* Composition bar - neutral color when no data */}
         <div className="h-2 rounded-full overflow-hidden flex self-stretch mt-1">
-          <div
-            className="h-full transition-all duration-300"
-            style={{
-              width: `${token0Percent}%`,
-              backgroundColor: token0Color,
-            }}
-          />
-          <div
-            className="h-full transition-all duration-300"
-            style={{
-              width: `${token1Percent}%`,
-              backgroundColor: token1Color,
-            }}
-          />
+          {hasInventoryData && token0Percent !== undefined && token1Percent !== undefined ? (
+            <>
+              <div
+                className="h-full transition-all duration-300"
+                style={{
+                  width: `${token0Percent}%`,
+                  backgroundColor: token0Color,
+                }}
+              />
+              <div
+                className="h-full transition-all duration-300"
+                style={{
+                  width: `${token1Percent}%`,
+                  backgroundColor: token1Color,
+                }}
+              />
+            </>
+          ) : (
+            <div
+              className="h-full w-full"
+              style={{ backgroundColor: '#221C1B' }}
+            />
+          )}
         </div>
 
         {/* Token values with icons - support text with tooltips */}
         <div className="flex items-center justify-between self-stretch mt-1">
           <InfoTooltip
             content={
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] font-medium" style={{ color: COLORS.wormbone }}>
-                  {token0Symbol} Balance
-                </span>
+              hasInventoryData ? (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] font-medium" style={{ color: COLORS.wormbone }}>
+                    {token0Symbol} Balance
+                  </span>
+                  <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                    USD value: {token0ValueUSD ? formatCurrency(token0ValueUSD) : '—'}
+                  </span>
+                </div>
+              ) : (
                 <span className="text-[11px]" style={{ color: COLORS.muted }}>
-                  USD value: {token0ValueUSD ? formatCurrency(token0ValueUSD) : '—'}
+                  {unavailableTooltip}
                 </span>
-              </div>
+              )
             }
           >
             <div className="flex items-center gap-1.5 ">
@@ -823,20 +996,26 @@ export function VaultSupportInfoCard({
                   fontWeight: 400,
                 }}
               >
-                {token0ValueUSD ? formatCurrency(token0ValueUSD, { compact: true }) : '—'}
+                {hasInventoryData && token0ValueUSD ? formatCurrency(token0ValueUSD, { compact: true }) : '—'}
               </span>
             </div>
           </InfoTooltip>
           <InfoTooltip
             content={
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] font-medium" style={{ color: COLORS.wormbone }}>
-                  {token1Symbol} Balance
-                </span>
+              hasInventoryData ? (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] font-medium" style={{ color: COLORS.wormbone }}>
+                    {token1Symbol} Balance
+                  </span>
+                  <span className="text-[11px]" style={{ color: COLORS.muted }}>
+                    USD value: {token1ValueUSD ? formatCurrency(token1ValueUSD) : '—'}
+                  </span>
+                </div>
+              ) : (
                 <span className="text-[11px]" style={{ color: COLORS.muted }}>
-                  USD value: {token1ValueUSD ? formatCurrency(token1ValueUSD) : '—'}
+                  {unavailableTooltip}
                 </span>
-              </div>
+              )
             }
           >
             <div className="flex items-center gap-1.5 ">
@@ -848,7 +1027,7 @@ export function VaultSupportInfoCard({
                   fontWeight: 400,
                 }}
               >
-                {token1ValueUSD ? formatCurrency(token1ValueUSD, { compact: true }) : '—'}
+                {hasInventoryData && token1ValueUSD ? formatCurrency(token1ValueUSD, { compact: true }) : '—'}
               </span>
               <TokenIcon symbol={token1Symbol} size={16} />
             </div>
@@ -865,12 +1044,13 @@ export function VaultSupportInfoCard({
 function LoadingState() {
   return (
     <div
-      className="rounded-[16px] border h-full flex flex-col overflow-hidden"
+      className="rounded-[16px] border flex flex-col overflow-hidden"
       style={{
         padding: '12px',
         gap: '12px',
         background: COLORS.surface,
         borderColor: COLORS.border,
+        height: '460px',
       }}
     >
       <div className="space-y-2 flex-shrink-0">
@@ -909,6 +1089,8 @@ export function DistributionChartCard({
   currentPriceFormatted,
   token0Symbol = 'Token0',
   token1Symbol = 'Token1',
+  invertValue = false,
+  showToken0PerToken1 = false,
   loading,
 }: DistributionChartCardProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
@@ -955,11 +1137,12 @@ export function DistributionChartCard({
   if (!hasChartData || !hasTVL) {
     return (
       <div
-        className="rounded-[16px] border h-full flex flex-col overflow-hidden"
+        className="rounded-[16px] border flex flex-col overflow-hidden"
         style={{
           padding: '12px',
           background: COLORS.surface,
           borderColor: COLORS.border,
+          height: '460px',
         }}
       >
         <div className="flex items-start justify-between flex-shrink-0">
@@ -977,7 +1160,16 @@ export function DistributionChartCard({
           <NoDataBadge />
         </div>
 
-        <div className="flex-1 w-full overflow-hidden rounded-b-[4px] mt-3">
+        <div 
+          className="flex-1 w-full overflow-hidden mt-3"
+          style={{
+            marginLeft: '-12px',
+            marginRight: '-12px',
+            marginBottom: '-12px',
+            width: 'calc(100% + 24px)',
+            borderRadius: '0 0 16px 16px',
+          }}
+        >
           <DesertIllustration />
         </div>
       </div>
@@ -986,12 +1178,13 @@ export function DistributionChartCard({
 
   return (
     <div
-      className="rounded-[16px] border h-full flex flex-col overflow-hidden"
+      className="rounded-[16px] border flex flex-col overflow-hidden"
       style={{
         padding: '12px',
         gap: '12px',
         background: COLORS.surface,
         borderColor: COLORS.border,
+        height: '460px',
       }}
     >
       {/* Header: TVL + Badge */}
@@ -1091,6 +1284,8 @@ export function DistributionChartCard({
                     currentPriceValue={currentPrice}
                     token0Symbol={token0Symbol}
                     token1Symbol={token1Symbol}
+                    invertValue={invertValue}
+                    showToken0PerToken1={showToken0PerToken1}
                   />
                 }
               />

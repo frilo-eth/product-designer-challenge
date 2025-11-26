@@ -17,6 +17,28 @@ import { usePriceImpactChartData, useFeesChartData, useInventoryRatioChartData, 
 import { vaultDataCache } from '@/lib/hooks/useLoadingCoordinator'
 import type { VaultMetadata, FeesHistoryResponse, VaultBalanceResponse, LiveInventoryResponse } from '@/lib/types'
 
+// ============================================
+// Helper Functions
+// ============================================
+/**
+ * Format price with appropriate precision
+ * For very small values (< 0.0001), show more digits to avoid showing 0.0000
+ */
+function formatPrice(value: number): string {
+  if (value >= 1) {
+    return value.toFixed(4)
+  } else if (value >= 0.0001) {
+    return value.toFixed(4)
+  } else if (value >= 0.00001) {
+    return value.toFixed(6)
+  } else if (value >= 0.000001) {
+    return value.toFixed(8)
+  } else {
+    // For extremely small values, use scientific notation or more precision
+    return value.toFixed(10).replace(/\.?0+$/, '')
+  }
+}
+
 // Chain ID to network name mapping
 const CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum',
@@ -37,10 +59,15 @@ interface VaultConfig {
   vaultVersion?: string
   feeTier?: string
   poolUrl?: string
+  /** Invert the price value (show 1/ratio instead of ratio) */
+  invertValue?: boolean
+  /** Show "token0 per token1" label instead of "token1 per token0" */
+  showToken0PerToken1?: boolean
 }
 
 const VAULT_CONFIGS: Record<string, VaultConfig> = {
   // Vault 1: VSN/USDC - Ethereum (Vision)
+  // API returns 0.077 = USDC per VSN (token1/token0) - show as-is
   '1-0xe20b37048bec200db1ef35669a4c8a9470ce3288': {
     name: 'VSN/USDC',
     tolerance: 2,
@@ -51,10 +78,12 @@ const VAULT_CONFIGS: Record<string, VaultConfig> = {
     account: 'vision',
     exchange: 'uniswap',
     vaultVersion: 'V4',
-    feeTier: '0.3%',
+    feeTier: '0.75%',
     poolUrl: 'https://app.arrakis.finance/vault/1/0xe20b37048bec200db1ef35669a4c8a9470ce3288',
+    // invertValue: false, showToken0PerToken1: false → "0.077 USDC per VSN"
   },
   // Vault 2: VSN/ETH - Ethereum (Vision)
+  // API returns ETH per VSN (token1/token0) - need to invert for "VSN per ETH"
   '1-0x70a8be67675837db9b0c7c36cb629c8aab479e93': {
     name: 'VSN/ETH',
     tolerance: 1.5,
@@ -65,10 +94,13 @@ const VAULT_CONFIGS: Record<string, VaultConfig> = {
     account: 'vision',
     exchange: 'uniswap',
     vaultVersion: 'V4',
-    feeTier: '0.05%',
+    feeTier: '0.75%',
     poolUrl: 'https://app.arrakis.finance/vault/1/0x70a8be67675837db9b0c7c36cb629c8aab479e93',
+    invertValue: true,          // Invert ratio
+    showToken0PerToken1: true,  // Show "VSN per ETH"
   },
   // Vault 3: MORPHO/ETH - Ethereum (Morpho)
+  // API returns 2963 = MORPHO per ETH (token0/token1) - show as-is with correct label
   '1-0x9f71298ee14176395c36797e65be1169e15f20d4': {
     name: 'MORPHO/ETH',
     tolerance: 3,
@@ -79,10 +111,13 @@ const VAULT_CONFIGS: Record<string, VaultConfig> = {
     account: 'morpho',
     exchange: 'uniswap',
     vaultVersion: 'V4',
-    feeTier: '0.3%',
+    feeTier: '0.29%',
     poolUrl: 'https://app.arrakis.finance/vault/1/0x9f71298ee14176395c36797e65be1169e15f20d4',
+    invertValue: false,         // Don't invert - value already correct
+    showToken0PerToken1: true,  // Show "MORPHO per ETH"
   },
-  // Vault 4: FOLKS/USDT - BSC (Folks)
+  // Vault 4: FOLKS/USDT - BSC (Folks) - PancakeSwap
+  // API returns USDT per FOLKS (token1/token0) - show as-is
   '56-0xb7f3c2dd386bb750d3e2132a1579d496c5faaf24': {
     name: 'FOLKS/USDT',
     tolerance: 2,
@@ -91,24 +126,29 @@ const VAULT_CONFIGS: Record<string, VaultConfig> = {
     token0Color: '#2F5CA6',
     token1Color: '#50AF95',
     account: 'folks',
-    exchange: 'uniswap',
+    exchange: 'pancakeswap',
     vaultVersion: 'V3',
-    feeTier: '0.3%',
+    feeTier: '0.0067%',
     poolUrl: 'https://app.arrakis.finance/vault/56/0xb7f3c2dd386bb750d3e2132a1579d496c5faaf24',
+    // invertValue: false, showToken0PerToken1: false → "X USDT per FOLKS"
   },
-  // Vault 5: WOO/WETH - Base (Woo)
+  // Vault 5: WOO/WETH - Base (Woo) - Aerodrome
+  // API token0=WETH, token1=WOO, returns 0.0284 WETH per WOO (token0/token1)
+  // Need to invert to show "35 WOO per WETH"
   '8453-0x5666af5c1b8d4bfe717a0d065fdc0bb190d49e42': {
     name: 'WOO/WETH',
     tolerance: 2,
-    token0Symbol: 'WOO',
-    token1Symbol: 'WETH',
-    token0Color: '#20252F',
-    token1Color: '#627EEA',
+    token0Symbol: 'WETH',
+    token1Symbol: 'WOO',
+    token0Color: '#627EEA',
+    token1Color: '#20252F',
     account: 'woo',
-    exchange: 'uniswap',
+    exchange: 'aerodrome',
     vaultVersion: 'V3',
     feeTier: '0.3%',
     poolUrl: 'https://app.arrakis.finance/vault/8453/0x5666af5c1b8d4bfe717a0d065fdc0bb190d49e42',
+    invertValue: true,           // Invert ratio (1/0.0284 = 35.2)
+    showToken0PerToken1: false,  // Show "WOO per WETH" (token1 per token0)
   },
 }
 
@@ -188,6 +228,8 @@ function getVaultConfig(key: string) {
     vaultVersion: config?.vaultVersion,
     feeTier: config?.feeTier,
     poolUrl: config?.poolUrl,
+    invertValue: config?.invertValue,
+    showToken0PerToken1: config?.showToken0PerToken1,
   }
 }
 
@@ -468,6 +510,28 @@ export default function DashboardPreviewPage() {
     }
   }, [loadLiquidityProfile, selectedVault, liveInventory?.data?.totalValueUSD])
 
+  // Calculate price from inventory amounts if available (more accurate than API price)
+  const effectiveCurrentPrice = useMemo(() => {
+    if (liveInventory?.data?.tokens?.token0?.amount && 
+        liveInventory?.data?.tokens?.token1?.amount &&
+        liveInventory?.data?.tokens?.token0?.decimals !== undefined &&
+        liveInventory?.data?.tokens?.token1?.decimals !== undefined) {
+      const amount0 = parseFloat(liveInventory.data.tokens.token0.amount) / Math.pow(10, liveInventory.data.tokens.token0.decimals)
+      const amount1 = parseFloat(liveInventory.data.tokens.token1.amount) / Math.pow(10, liveInventory.data.tokens.token1.decimals)
+      if (amount0 > 0 && amount1 > 0) {
+        // Calculate price: token1 per token0 (standard format)
+        return amount1 / amount0
+      }
+    }
+    return liquidityProfile?.currentPrice ?? null
+  }, [
+    liveInventory?.data?.tokens?.token0?.amount,
+    liveInventory?.data?.tokens?.token1?.amount,
+    liveInventory?.data?.tokens?.token0?.decimals,
+    liveInventory?.data?.tokens?.token1?.decimals,
+    liquidityProfile?.currentPrice,
+  ])
+
   // Calculate APR from TVL and 30d fees
   const calculatedAPR = useMemo(() => {
     const tvl = liveInventory?.data?.totalValueUSD
@@ -537,9 +601,9 @@ export default function DashboardPreviewPage() {
                 pairName={selectedVault.displayName || 'Unknown Vault'}
                 token0Symbol={selectedVault.token0Symbol || 'TKN0'}
                 token1Symbol={selectedVault.token1Symbol || 'TKN1'}
-                exchange={selectedVault.exchange}
+                exchange={vaultDetails?.exchange || selectedVault.exchange}
                 vaultVersion={selectedVault.vaultVersion}
-                feeTier={selectedVault.feeTier}
+                feeTier={vaultDetails?.feeTier || selectedVault.feeTier}
                 chainId={selectedVault.chainId || 1}
                 poolUrl={selectedVault.poolUrl}
                 volume30d={vaultDetails?.summary?.volume30d?.usdValue}
@@ -569,14 +633,27 @@ export default function DashboardPreviewPage() {
                     chartData={liquidityProfile?.points || null}
                     leftBound={liquidityProfile?.leftBound || -50}
                     rightBound={liquidityProfile?.rightBound || 50}
-                    currentPrice={liquidityProfile?.currentPrice}
+                    currentPrice={effectiveCurrentPrice ?? undefined}
                     currentPriceFormatted={
-                      liquidityProfile?.currentPrice
-                        ? `${liquidityProfile.currentPrice.toFixed(4)} ${selectedVault.token1Symbol} per ${selectedVault.token0Symbol}`
+                      effectiveCurrentPrice && 
+                      !!liquidityProfile?.points && 
+                      liquidityProfile.points.length > 0
+                        ? (() => {
+                            const rawValue = selectedVault.invertValue 
+                              ? (1 / effectiveCurrentPrice)
+                              : effectiveCurrentPrice
+                            const value = formatPrice(rawValue)
+                            const label = selectedVault.showToken0PerToken1
+                              ? `${selectedVault.token0Symbol} per ${selectedVault.token1Symbol}`
+                              : `${selectedVault.token1Symbol} per ${selectedVault.token0Symbol}`
+                            return `${value} ${label}`
+                          })()
                         : undefined
                     }
                     token0Symbol={selectedVault.token0Symbol}
                     token1Symbol={selectedVault.token1Symbol}
+                    invertValue={selectedVault.invertValue}
+                    showToken0PerToken1={selectedVault.showToken0PerToken1}
                     loading={liquidityStatus === 'idle' || liquidityStatus === 'loading'}
                   />
                 </div>
@@ -586,9 +663,9 @@ export default function DashboardPreviewPage() {
                   <VaultSupportInfoCard
                     token0Symbol={selectedVault.token0Symbol || 'TKN0'}
                     token1Symbol={selectedVault.token1Symbol || 'TKN1'}
-                    priceRatio={liquidityProfile?.currentPrice}
-                    leftBound={liquidityProfile?.leftBound || -50}
-                    rightBound={liquidityProfile?.rightBound || 50}
+                    priceRatio={effectiveCurrentPrice ?? undefined}
+                    leftBound={liquidityProfile?.leftBound}
+                    rightBound={liquidityProfile?.rightBound}
                     skewPercent={liquidityProfile ? Math.abs(liquidityProfile.weightedCenter) : undefined}
                     skewDirection={
                       liquidityProfile?.weightedCenter
@@ -613,9 +690,25 @@ export default function DashboardPreviewPage() {
                     token1Percent={liveInventory?.data?.tokens?.token1?.percentage ? Math.round(liveInventory.data.tokens.token1.percentage) : 50}
                     token0ValueUSD={liveInventory?.data?.tokens?.token0?.valueUSD}
                     token1ValueUSD={liveInventory?.data?.tokens?.token1?.valueUSD}
+                    token0Amount={liveInventory?.data?.tokens?.token0?.amount}
+                    token1Amount={liveInventory?.data?.tokens?.token1?.amount}
+                    token0Decimals={liveInventory?.data?.tokens?.token0?.decimals}
+                    token1Decimals={liveInventory?.data?.tokens?.token1?.decimals}
                     token0Color={selectedVault.token0Color}
                     token1Color={selectedVault.token1Color}
                     loading={liquidityStatus === 'idle' || liquidityStatus === 'loading'}
+                    hasLiquidityData={
+                      !!liquidityProfile?.points && 
+                      liquidityProfile.points.length > 0 && 
+                      typeof liveInventory?.data?.totalValueUSD === 'number' && 
+                      liveInventory.data.totalValueUSD > 0
+                    }
+                    hasInventoryData={
+                      !!liveInventory?.data?.tokens?.token0?.percentage &&
+                      !!liveInventory?.data?.tokens?.token1?.percentage
+                    }
+                    invertValue={selectedVault.invertValue}
+                    showToken0PerToken1={selectedVault.showToken0PerToken1}
                   />
                 </div>
                 </>

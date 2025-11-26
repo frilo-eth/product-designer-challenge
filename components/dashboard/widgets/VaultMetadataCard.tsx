@@ -64,7 +64,10 @@ const NETWORK_ICON_MAP: Record<number, string> = {
 const DEX_ICON_MAP: Record<string, string> = {
   uniswap: '/assets/icons/dex/uniswap.svg',
   univ3: '/assets/icons/dex/uniswap.svg',
-  // Add more DEXes as needed
+  pancakeswap: '/assets/icons/dex/cake.svg',
+  cake: '/assets/icons/dex/cake.svg',
+  aerodrome: '/assets/icons/dex/aero.svg',
+  aero: '/assets/icons/dex/aero.svg',
 }
 
 // ==========================================
@@ -254,28 +257,6 @@ function VaultBadges({
   return content
 }
 
-function ErrorBadge() {
-  return (
-    <span
-      className="flex justify-center items-center"
-      style={{
-        width: 'fit-content',
-        padding: '1px 6px',
-        borderRadius: '9999px',
-        background: 'rgba(236, 145, 23, 0.15)',
-        color: '#EC9117',
-        fontSize: '10px',
-        fontWeight: 400,
-        lineHeight: '14px',
-        textAlign: 'center',
-        alignSelf: 'flex-start',
-      }}
-    >
-      API Error
-    </span>
-  )
-}
-
 // Consistent min-height for all metric states to prevent layout jumps
 const METRIC_MIN_HEIGHT = 44 // Label (~14px) + gap + value (~24px)
 
@@ -294,29 +275,34 @@ function MetricColumn({
   if (loading) {
     return (
       <div 
-        className="flex flex-col gap-0.5 items-start"
+        className="flex flex-col gap-0.5 items-start min-w-0"
         style={{ minHeight: METRIC_MIN_HEIGHT }}
       >
-        <div className="h-[14px] w-16 rounded bg-white/10 animate-pulse" />
-        <div className="h-[24px] w-24 rounded bg-white/10 animate-pulse" />
+        <div className="h-[14px] w-20 sm:w-24 rounded bg-white/10 animate-pulse" />
+        <div className="h-[20px] sm:h-[24px] w-28 sm:w-32 rounded bg-white/10 animate-pulse" />
       </div>
     )
   }
 
-  // Error state - maintains same height structure
+  // Error state - maintains same height structure with long hyphen
   if (error) {
     return (
       <div 
-        className="flex flex-col gap-0.5 items-start"
+        className="flex flex-col gap-0.5 items-start min-w-0"
         style={{ minHeight: METRIC_MIN_HEIGHT }}
       >
         <span
-          className="text-[12px] font-normal"
+          className="text-[11px] sm:text-[12px] font-normal"
           style={{ color: '#8E7571' }}
         >
           {label}
         </span>
-        <ErrorBadge />
+        <span
+          className="text-[16px] sm:text-[20px] font-medium tracking-tight"
+          style={{ color: '#EC9117' }}
+        >
+          —
+        </span>
       </div>
     )
   }
@@ -335,7 +321,7 @@ function MetricColumn({
       </span>
       <span
         className="text-[16px] sm:text-[20px] font-medium tracking-tight truncate max-w-full"
-        style={{ color: '#F5EBE5' }}
+        style={{ color: '#EC9117' }}
       >
         {value}
       </span>
@@ -399,19 +385,20 @@ export function VaultMetadataCard({
         minHeight: '82px', // Consistent height across loading/error/success states
       }}
     >
-      {/* CSS Grid layout: 40% left (pair + badges), 60% right (stats evenly distributed) */}
+      {/* Responsive Grid: Desktop (4 cols) | Mobile (1 col stack) */}
       <div 
-        className="grid items-center gap-4 px-4 py-4 sm:px-5"
+        className="grid items-center gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[40%_20%_20%_20%] grid-cols-1"
         style={{
-          gridTemplateColumns: '40% 20% 20% 20%',
-          gridTemplateAreas: '"left vol fees apr"',
-          minHeight: '56px', // Inner content min-height
+          minHeight: '56px', // Inner content min-height for consistency
         }}
       >
-        {/* Left side: Token pair + badges (40%) */}
-        <div className="flex items-center gap-3" style={{ gridArea: 'left', minWidth: '200px' }}>
+        {/* Left side: Token pair + badges */}
+        <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap">
           <TokenPairIcons token0Symbol={token0Symbol} token1Symbol={token1Symbol} />
-          <span className="text-[18px] sm:text-[20px] font-medium tracking-tight whitespace-nowrap" style={{ color: '#F5EBE5', minWidth: '100px' }}>
+          <span 
+            className="text-[18px] sm:text-[20px] font-medium tracking-tight whitespace-nowrap" 
+            style={{ color: '#F5EBE5' }}
+          >
             {pairName}
           </span>
           <VaultBadges
@@ -423,8 +410,8 @@ export function VaultMetadataCard({
           />
         </div>
 
-        {/* Stats - 60% evenly distributed (20% each) */}
-        <div style={{ gridArea: 'vol' }} className="flex justify-center">
+        {/* Stats - Responsive: Desktop (centered) | Mobile (left-aligned) */}
+        <div className="flex justify-start lg:justify-center">
           <MetricColumn
             label="30D Volume"
             value={formattedVolume}
@@ -432,7 +419,7 @@ export function VaultMetadataCard({
             error={volumeError}
           />
         </div>
-        <div style={{ gridArea: 'fees' }} className="flex justify-center">
+        <div className="flex justify-start lg:justify-center">
           <MetricColumn
             label="30D Fees"
             value={formattedFees}
@@ -440,7 +427,7 @@ export function VaultMetadataCard({
             error={feesError}
           />
         </div>
-        <div style={{ gridArea: 'apr' }} className="flex justify-center">
+        <div className="flex justify-start lg:justify-center">
           <MetricColumn
             label="30D APR"
             value={formattedApr}
@@ -449,23 +436,6 @@ export function VaultMetadataCard({
           />
         </div>
       </div>
-
-      {/* Mobile layout fallback */}
-      <style jsx>{`
-        @media (max-width: 1024px) {
-          div[style*="gridTemplateColumns"] {
-            grid-template-columns: 1fr !important;
-            grid-template-areas: 
-              "left"
-              "vol"
-              "fees"
-              "apr" !important;
-          }
-          div[style*="gridArea: 'left'"] {
-            flex-wrap: wrap;
-          }
-        }
-      `}</style>
     </div>
   )
 }
