@@ -1,6 +1,6 @@
-# ARRK Vault Dashboard — Product Designer Challenge (72h)
+# Arrakis - Vault Dashboard — Product Designer Challenge
 
-## TL;DR (5 minutes, C-level)
+## TL;DR
 
 - Built a fully functional **Vault Overview Dashboard** for Arrakis in 72 hours, using Next.js, Recharts, shadcn, WalletConnect, and AI-accelerated development.
 - **Objective**: Allow protocol founders/CFOs to understand vault performance in 20 seconds.
@@ -9,12 +9,25 @@
 - **Navigation** supports multi-vault clients, multi-wallet connections, and rapid switching, treating vaults like "accounts".
 - **Dashboard** expresses status, risk, allocation, performance, and execution quality in one sweep — no tab-hunting.
 - **System** built with a tiny design token footprint; extremely portable, low-dependency, and implementation-ready (implemented already).
-- **Cost**: $250 in tools/tokens.
+- **Cost**: $280 in tools/tokens.
 - **Output**: Design + full implementation.
 
 ---
 
-## 20-Minute Skim (Power-Reading)
+## Figma File
+
+**View the design**: [Arrakis Challenge - Figma](https://www.figma.com/design/yNa1f7BBQyqhlxy6kpRda3/Arrakis-Challenge?node-id=22-5321&t=Awq8FMuzAuWslMea-1)
+
+<a href="https://www.figma.com/design/yNa1f7BBQyqhlxy6kpRda3/Arrakis-Challenge?node-id=22-5321&t=Awq8FMuzAuWslMea-1">
+  <img src="https://img.shields.io/badge/Figma-View%20Design-F24E1E?logo=figma&logoColor=white" alt="View Figma Design" />
+</a>
+
+<!-- Figma Embed (for supported viewers) -->
+<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/design/yNa1f7BBQyqhlxy6kpRda3/Arrakis-Challenge?node-id=22-5321&embed-host=share" allowfullscreen></iframe>
+
+---
+
+## Notes
 
 ### 1. Debrief
 
@@ -43,7 +56,7 @@ Protocol founders, CFOs, quant teams, treasury managers.
 - Users need clarity in 20 seconds, and depth when they want it.
 
 **The design must bridge**:
-> high-frequency market complexity ↔ human-scale legibility.
+- high-frequency market complexity ↔ human legibility.
 
 ---
 
@@ -59,7 +72,8 @@ Protocol founders, CFOs, quant teams, treasury managers.
 - Metadata before math
 - Progressive disclosure
 - Integrated tooltips only where needed
-- Zero-click anchor points (hover → insight)
+- Near-zero-click, zero-scrolling approach (hover → insights)
+- Responsiveness could be improved
 
 ---
 
@@ -71,7 +85,7 @@ Protocol founders, CFOs, quant teams, treasury managers.
 
 **What it does**:
 - Shows where liquidity sits relative to current price.
-- Highlights range, skew, cushion, risk pockets, tapering, and current position directionality.
+- Highlights range, skew, risk insights, and current position directionality.
 - Makes tick-level dynamics readable via histogram + smoothing.
 
 **Why it matters**:
@@ -81,13 +95,14 @@ Liquidity posture dictates:
 - Risk exposure
 - Rebalance needs
 - Execution quality
+- Position range strategy
 
 This is the single most important signal for vault performance.
 
 **Technical/Design Achievements**:
 - Custom data transformation pipeline.
 - Range cropping + Gaussian smoothing.
-- Bucketizing for Uniswap-like histogram interpretation.
+- Bucketizing for Uniswap-like histogram interpretation (but cleaner, and focused on distribution/concentration)
 - Current price as thin green vertical anchor → instantly find equilibrium.
 - Color spectrum (Efficient / Buffer / Thin) rewritten to reflect meaning, not "warning/critical" semantics.
 - Tooltips always show price first, % second → aligned with trader mental model.
@@ -111,9 +126,9 @@ Users can orient instantly without scanning paragraphs.
 **Chunking**:
 
 Four primary chunks:
-1. **State** (TVL + composition + skew)
-2. **Risk** (range, tapering, distribution shape)
-3. **Performance** (fees, price impact)
+1. **State** (TVL + composition + skew + price if available or computable)
+2. **Risk** (range, skew, distribution shape)
+3. **Performance** (fees, price impact vs trade size)
 4. **Behavior over time** (inventory ratio chart)
 
 Each block answers a distinct question.
@@ -121,20 +136,20 @@ Each block answers a distinct question.
 **Progressive Disclosure**:
 - Tooltips reveal raw values.
 - Hover on histogram reveals price + % + band meaning.
-- Secondary charts scale in detail only when the user engages.
+- Secondary charts expresses in detail when user engages.
 
 ---
 
 #### 5.3 Near-Zero Click Navigation
 
 Users can:
-- Switch vaults from the left rail
-- Switch wallets for treasury vs protocol view
-- Expand charts full-screen
-- Navigate between multiple client vaults without losing context
+- Switch vaults from the left rail or the breadcrumbs
+- Switch wallets for treasury vs protocol view on the user component
+- Navigate between multiple vaults (or projects) without losing context and with fluid animations
 - Use a simple navbar to jump to other pools instantly
 
 Everything is reachable in one or two clicks max.
+Nothing below the fold, 900px wide main container, fully responsive, modular and stackable.
 
 ---
 
@@ -181,7 +196,9 @@ Few design tokens → clean, branded, maintainable.
 - Maintain performance at scale
 
 **Arrakis Branding**
-Warm neutrals + liquidity spectrum + subtle glow. Minimal but distinct.
+- Warm neutrals + liquidity spectrum + subtle glow. Minimal but distinct.
+- Protocols can also visualize their brands through token color.
+- Custom empty state illustrations.
 
 ---
 
@@ -208,9 +225,9 @@ Warm neutrals + liquidity spectrum + subtle glow. Minimal but distinct.
 
 | Route | Description |
 |-------|-------------|
-| `/dashboard-preview` | **Main working dashboard** with all features |
-| `/vaults` | Vault list view |
-| `/vault/[chainId]/[address]` | Individual vault detail page |
+| `/dashboard-preview` | **Main working dashboard** V3 with all features and functioning prototype |
+| `/vaults` | Vault list view | V2. Tested data propagation.
+| `/vault/[chainId]/[address]` | V1. Individual vault detail page. Tested data transformation. |
 | `/` | Original starter template (reference) |
 
 ### Component Architecture
@@ -237,7 +254,7 @@ const COLORS = {
   muted: '#8E7571',        // Secondary text
   accent: '#3BE38B',       // Active/current price
   token0: '#2775CA',       // USDC blue
-  token1: '#103E36',       // Base token green
+  token1: '#103E36',       // Base token green e.g. VSN
 }
 ```
 
