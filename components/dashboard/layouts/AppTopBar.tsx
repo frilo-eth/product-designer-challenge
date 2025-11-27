@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ChevronDown, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -270,7 +270,14 @@ export function AppTopBar({
   onDisconnect,
 }: AppTopBarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const hasVaultDropdown = vaults.length > 1
   const selectedVault = vaults.find((v) => v.key === selectedVaultKey)
+
+  useEffect(() => {
+    if (!hasVaultDropdown && dropdownOpen) {
+      setDropdownOpen(false)
+    }
+  }, [hasVaultDropdown, dropdownOpen])
 
   return (
     <header
@@ -314,57 +321,68 @@ export function AppTopBar({
           {/* Chevron separator */}
           <ChevronRightIcon />
 
-          {/* Active vault with dropdown */}
+          {/* Active vault with optional dropdown */}
           <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-1 hover:opacity-80 transition-opacity"
-            >
+            {hasVaultDropdown ? (
+              <>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+                >
+                  <span
+                    className="text-[14px] font-normal leading-5"
+                    style={{ color: '#F5EBE5' }}
+                  >
+                    {selectedVault?.displayName || 'Select vault'}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 transition-transform',
+                      dropdownOpen && 'rotate-180'
+                    )}
+                    style={{ color: '#8E7571' }}
+                  />
+                </button>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setDropdownOpen(false)}
+                    />
+
+                    {/* Menu */}
+                    <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] bg-[#171312] border border-[#221C1B] rounded-lg overflow-hidden shadow-xl py-1">
+                      {vaults.map((vault) => (
+                        <button
+                          key={vault.key}
+                          onClick={() => {
+                            onVaultChange(vault.key)
+                            setDropdownOpen(false)
+                          }}
+                          className={cn(
+                            'w-full px-3 py-2 text-left text-[14px] transition-colors',
+                            vault.key === selectedVaultKey
+                              ? 'text-[#F5EBE5] bg-[rgba(245,235,229,0.05)]'
+                              : 'text-[#8E7571] hover:text-[#F5EBE5] hover:bg-[rgba(245,235,229,0.05)]'
+                          )}
+                        >
+                          {vault.displayName}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
               <span
                 className="text-[14px] font-normal leading-5"
                 style={{ color: '#F5EBE5' }}
               >
                 {selectedVault?.displayName || 'Select vault'}
               </span>
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 transition-transform',
-                  dropdownOpen && 'rotate-180'
-                )}
-                style={{ color: '#8E7571' }}
-              />
-            </button>
-
-            {/* Dropdown Menu */}
-            {dropdownOpen && (
-              <>
-                {/* Backdrop */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setDropdownOpen(false)}
-                />
-
-                {/* Menu */}
-                <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] bg-[#171312] border border-[#221C1B] rounded-lg overflow-hidden shadow-xl py-1">
-                  {vaults.map((vault) => (
-                    <button
-                      key={vault.key}
-                      onClick={() => {
-                        onVaultChange(vault.key)
-                        setDropdownOpen(false)
-                      }}
-                      className={cn(
-                        'w-full px-3 py-2 text-left text-[14px] transition-colors',
-                        vault.key === selectedVaultKey
-                          ? 'text-[#F5EBE5] bg-[rgba(245,235,229,0.05)]'
-                          : 'text-[#8E7571] hover:text-[#F5EBE5] hover:bg-[rgba(245,235,229,0.05)]'
-                      )}
-                    >
-                      {vault.displayName}
-                    </button>
-                  ))}
-                </div>
-              </>
             )}
           </div>
         </nav>

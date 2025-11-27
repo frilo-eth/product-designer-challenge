@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { Toaster } from 'sonner'
+import { Analytics } from '@vercel/analytics/react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,6 +23,31 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={inter.className}>
         <Providers>{children}</Providers>
+        <Analytics />
+        <Toaster 
+          theme="dark"
+          toastOptions={{
+            style: {
+              background: '#171312',
+              border: '1px solid #221C1B',
+              color: '#F5EBE5',
+            },
+            success: {
+              style: {
+                background: '#171312',
+                border: '1px solid #221C1B',
+                color: '#F5EBE5',
+              },
+            },
+            error: {
+              style: {
+                background: '#171312',
+                border: '1px solid #221C1B',
+                color: '#F5EBE5',
+              },
+            },
+          }}
+        />
       </body>
     </html>
   )

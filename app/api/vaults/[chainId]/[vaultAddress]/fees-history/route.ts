@@ -154,7 +154,7 @@ export async function GET(
       (!p.feesUSD || parseFloat(p.feesUSD) === 0) && 
       (!p.volumeUSD || parseFloat(p.volumeUSD) === 0)
     )
-
+    
     if (transformedData.data.length > 0 && allZeros) {
       // If all zeros and summary also shows zero/null, this vault likely has no fees
       // Add flags to help the frontend show a better message

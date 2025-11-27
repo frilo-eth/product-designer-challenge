@@ -7,6 +7,7 @@ import {
   useState,
   useRef,
 } from 'react'
+import { toast } from 'sonner'
 
 import { PriceImpactCard, FeesHistoryCard, InventoryRatioCard, DistributionChartCard, VaultSupportInfoCard, AppSidebar, AppTopBar, VaultMetadataCard } from '@/components/dashboard'
 import type { Account, VaultItem } from '@/components/dashboard'
@@ -590,10 +591,45 @@ export default function Home() {
                 pairName={selectedVault.displayName || 'Unknown Vault'}
                 token0Symbol={selectedVault.token0Symbol || 'TKN0'}
                 token1Symbol={selectedVault.token1Symbol || 'TKN1'}
-                exchange={vaultDetails?.exchange || selectedVault.exchange}
+                token0Address={(() => {
+                  const addr0 = (vaultDetails as any)?.data?.tokens?.token0?.address || (vaultDetails as any)?.data?.token0?.address || vaultDetails?.token0?.address
+                  const addr1 = (vaultDetails as any)?.data?.tokens?.token1?.address || (vaultDetails as any)?.data?.token1?.address || vaultDetails?.token1?.address
+                  // Fix FOLKS/USDT: swap addresses only for this vault
+                  if (selectedVault.key === '56-0xb7f3c2dd386bb750d3e2132a1579d496c5faaf24') {
+                    return addr1
+                  }
+                  return addr0
+                })()}
+                token1Address={(() => {
+                  const addr0 = (vaultDetails as any)?.data?.tokens?.token0?.address || (vaultDetails as any)?.data?.token0?.address || vaultDetails?.token0?.address
+                  const addr1 = (vaultDetails as any)?.data?.tokens?.token1?.address || (vaultDetails as any)?.data?.token1?.address || vaultDetails?.token1?.address
+                  // Fix FOLKS/USDT: swap addresses only for this vault
+                  if (selectedVault.key === '56-0xb7f3c2dd386bb750d3e2132a1579d496c5faaf24') {
+                    return addr0
+                  }
+                  return addr1
+                })()}
+                exchange={
+                  vaultDetails?.exchange || 
+                  (() => {
+                    const poolName = (vaultDetails as any)?.data?.pool?.name?.toLowerCase() || ''
+                    if (poolName.includes('uniswap')) return 'uniswap'
+                    if (poolName.includes('pancake')) return 'pancakeswap'
+                    if (poolName.includes('aerodrome')) return 'aerodrome'
+                    return selectedVault.exchange
+                  })()
+                }
                 vaultVersion={selectedVault.vaultVersion}
-                feeTier={vaultDetails?.feeTier || selectedVault.feeTier}
+                feeTier={
+                  vaultDetails?.feeTier || 
+                  (typeof (vaultDetails as any)?.data?.pool?.feeTier === 'number' 
+                    ? `${(vaultDetails as any).data.pool.feeTier.toFixed(2)}%` 
+                    : (vaultDetails as any)?.data?.pool?.feeTier) || 
+                  selectedVault.feeTier
+                }
                 chainId={selectedVault.chainId || 1}
+                poolAddress={(vaultDetails as any)?.data?.pool?.address}
+                chainName={(vaultDetails as any)?.data?.general?.chain}
                 poolUrl={selectedVault.poolUrl}
                 volume30d={vaultDetails?.summary?.volume30d?.usdValue}
                 fees30d={vaultDetails?.summary?.fees30d?.usdValue}

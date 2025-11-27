@@ -216,7 +216,7 @@ export async function fetchPriceImpact(
   })
 
   const url = `${API_BASE}/${chainId}/${vaultAddress}/price-impact?${params}`
-
+  
   const raw = await apiFetch<ArrakisPriceImpactResponse>(url)
 
   const normalized: PriceImpactDataPoint[] =

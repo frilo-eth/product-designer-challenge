@@ -2,6 +2,14 @@
 
 import { useMemo } from 'react'
 import Image from 'next/image'
+import { toast } from 'sonner'
+
+// ==========================================
+// Design Tokens
+// ==========================================
+const COLORS = {
+  wormboneSubtle: 'rgba(245, 235, 229, 0.05)',
+}
 
 // ==========================================
 // Types
@@ -14,6 +22,10 @@ export interface VaultMetadataCardProps {
   token0Symbol: string
   /** Token 1 symbol for icon lookup */
   token1Symbol: string
+  /** Token 0 contract address */
+  token0Address?: string
+  /** Token 1 contract address */
+  token1Address?: string
   /** DEX/Exchange name e.g. "uniswap" */
   exchange?: string
   /** Vault version e.g. "V4" */
@@ -22,7 +34,11 @@ export interface VaultMetadataCardProps {
   feeTier?: string
   /** Chain ID for network icon */
   chainId: number
-  /** External DEX pool URL */
+  /** Chain name from API e.g. "Ethereum" */
+  chainName?: string
+  /** Pool contract address (for DEX explorer link) */
+  poolAddress?: string
+  /** External DEX pool URL (deprecated - use poolAddress instead) */
   poolUrl?: string
   /** 30D Volume in USD */
   volume30d?: number
@@ -74,41 +90,145 @@ const DEX_ICON_MAP: Record<string, string> = {
 // Helper Components
 // ==========================================
 
+// Helper to get DEX pool URL or block explorer URL
+function getPoolUrl(
+  exchange: string | undefined,
+  chainName: string | undefined,
+  chainId: number,
+  poolAddress: string
+): string {
+  const exchangeLower = exchange?.toLowerCase() || ''
+  
+  // For Uniswap pools, use Uniswap explorer
+  if ((exchangeLower.includes('uniswap') || exchangeLower === 'uniswap') && chainName && poolAddress) {
+    const chainNameLower = chainName.toLowerCase()
+    return `https://app.uniswap.org/explore/pools/${chainNameLower}/${poolAddress}`
+  }
+
+  // For PancakeSwap pools, use PancakeSwap liquidity pool URL
+  if ((exchangeLower.includes('pancake') || exchangeLower === 'pancakeswap') && poolAddress) {
+    return `https://pancakeswap.finance/liquidity/pool/bsc/${poolAddress}`
+  }
+
+  // For Aerodrome pools, use Blockscout explorer
+  if ((exchangeLower.includes('aerodrome') || exchangeLower === 'aerodrome') && poolAddress) {
+    return `https://base.blockscout.com/address/${poolAddress}`
+  }
+
+  // For other DEXs or fallback, use block explorer
+  const baseUrls: Record<number, string> = {
+    1: 'https://etherscan.io/address',
+    56: 'https://bscscan.com/address',
+    8453: 'https://basescan.org/address',
+  }
+  const baseUrl = baseUrls[chainId] || `https://etherscan.io/address`
+  return `${baseUrl}/${poolAddress}`
+}
+
+// Helper to get block explorer URL for a token address
+function getTokenExplorerUrl(chainId: number, address: string): string {
+  const baseUrls: Record<number, string> = {
+    1: 'https://etherscan.io/address',
+    56: 'https://bscscan.com/address',
+    8453: 'https://basescan.org/address',
+  }
+  const baseUrl = baseUrls[chainId] || `https://etherscan.io/address`
+  return `${baseUrl}/${address}`
+}
+
+// Helper to copy address URL to clipboard
+async function copyTokenAddressUrl(chainId: number, address: string, tokenSymbol: string) {
+  try {
+    const url = getTokenExplorerUrl(chainId, address)
+    await navigator.clipboard.writeText(url)
+    toast.success(`${tokenSymbol} address URL copied`)
+  } catch (err) {
+    toast.error('Failed to copy address URL')
+  }
+}
+
 function TokenPairIcons({
   token0Symbol,
   token1Symbol,
+  token0Address,
+  token1Address,
+  chainId,
 }: {
   token0Symbol: string
   token1Symbol: string
+  token0Address?: string
+  token1Address?: string
+  chainId: number
 }) {
   const token0Icon = TOKEN_ICON_MAP[token0Symbol.toUpperCase()] || TOKEN_ICON_MAP.ETH
   const token1Icon = TOKEN_ICON_MAP[token1Symbol.toUpperCase()] || TOKEN_ICON_MAP.ETH
 
   return (
     <div className="flex items-center" style={{ marginRight: '4px' }}>
-      <div
-        className="relative rounded-full overflow-hidden"
-        style={{
-          width: 32,
-          height: 32,
-          border: '1px solid rgba(245, 235, 229, 0.05)',
-          zIndex: 2,
-        }}
-      >
-        <Image src={token0Icon} alt={token0Symbol} width={32} height={32} />
-      </div>
-      <div
-        className="relative rounded-full overflow-hidden"
-        style={{
-          width: 32,
-          height: 32,
-          marginLeft: '-8px',
-          border: '1px solid rgba(245, 235, 229, 0.05)',
-          zIndex: 1,
-        }}
-      >
-        <Image src={token1Icon} alt={token1Symbol} width={32} height={32} />
-      </div>
+      {token0Address ? (
+        <button
+          onClick={() => copyTokenAddressUrl(chainId, token0Address, token0Symbol)}
+          className="relative rounded-full overflow-hidden cursor-pointer group"
+          style={{
+            width: 32,
+            height: 32,
+            border: '1px solid rgba(245, 235, 229, 0.05)',
+            zIndex: 2,
+          }}
+          title={`Click to copy ${token0Symbol} address URL`}
+        >
+          <Image src={token0Icon} alt={token0Symbol} width={32} height={32} />
+          <div
+            className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ backgroundColor: COLORS.wormboneSubtle }}
+          />
+        </button>
+      ) : (
+        <div
+          className="relative rounded-full overflow-hidden"
+          style={{
+            width: 32,
+            height: 32,
+            border: '1px solid rgba(245, 235, 229, 0.05)',
+            zIndex: 2,
+          }}
+        >
+          <Image src={token0Icon} alt={token0Symbol} width={32} height={32} />
+        </div>
+      )}
+      {token1Address ? (
+        <button
+          onClick={() => copyTokenAddressUrl(chainId, token1Address, token1Symbol)}
+          className="relative rounded-full overflow-hidden cursor-pointer group"
+          style={{
+            width: 32,
+            height: 32,
+            marginLeft: '-8px',
+            border: '1px solid rgba(245, 235, 229, 0.05)',
+            zIndex: 1,
+          }}
+          title={`Click to copy ${token1Symbol} address URL`}
+        >
+          <Image src={token1Icon} alt={token1Symbol} width={32} height={32} />
+          <div
+            className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ backgroundColor: COLORS.wormboneSubtle }}
+          />
+        </button>
+      ) : (
+        <div
+          className="relative rounded-full overflow-hidden"
+          style={{
+            width: 32,
+            height: 32,
+            marginLeft: '-8px',
+            border: '1px solid rgba(245, 235, 229, 0.05)',
+            zIndex: 1,
+          }}
+        >
+          <Image src={token1Icon} alt={token1Symbol} width={32} height={32} />
+        </div>
+      )}
     </div>
   )
 }
@@ -118,12 +238,16 @@ function VaultBadges({
   vaultVersion,
   feeTier,
   chainId,
+  chainName,
+  poolAddress,
   poolUrl,
 }: {
   exchange?: string
   vaultVersion?: string
   feeTier?: string
   chainId: number
+  chainName?: string
+  poolAddress?: string
   poolUrl?: string
 }) {
   const dexIcon = exchange ? DEX_ICON_MAP[exchange.toLowerCase()] : null
@@ -236,10 +360,15 @@ function VaultBadges({
     </div>
   )
 
-  if (poolUrl) {
+  // Use poolAddress to build DEX explorer URL (Uniswap) or block explorer URL, fallback to poolUrl if provided
+  const poolLink = poolAddress 
+    ? getPoolUrl(exchange, chainName, chainId, poolAddress)
+    : poolUrl
+
+  if (poolLink) {
     return (
       <a
-        href={poolUrl}
+        href={poolLink}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -247,7 +376,7 @@ function VaultBadges({
           textDecoration: 'none',
           cursor: 'pointer',
         }}
-        aria-label={exchange ? `Open ${exchange} pool in new tab` : 'Open pool in new tab'}
+        aria-label={exchange ? `View ${exchange} pool on block explorer` : 'View pool on block explorer'}
       >
         {content}
       </a>
@@ -337,10 +466,14 @@ export function VaultMetadataCard({
   pairName,
   token0Symbol,
   token1Symbol,
+  token0Address,
+  token1Address,
   exchange,
   vaultVersion,
   feeTier,
   chainId,
+  chainName,
+  poolAddress,
   poolUrl,
   volume30d,
   fees30d,
@@ -394,18 +527,70 @@ export function VaultMetadataCard({
       >
         {/* Left side: Token pair + badges */}
         <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap">
-          <TokenPairIcons token0Symbol={token0Symbol} token1Symbol={token1Symbol} />
-          <span 
-            className="text-[18px] sm:text-[20px] font-medium tracking-tight whitespace-nowrap" 
-            style={{ color: '#F5EBE5' }}
-          >
-            {pairName}
-          </span>
+          <TokenPairIcons 
+            token0Symbol={token0Symbol} 
+            token1Symbol={token1Symbol}
+            token0Address={token0Address}
+            token1Address={token1Address}
+            chainId={chainId}
+          />
+          <div className="flex items-center gap-1">
+            {token0Address ? (
+              <button
+                onClick={() => copyTokenAddressUrl(chainId, token0Address, token0Symbol)}
+                className="text-[18px] sm:text-[20px] font-medium tracking-tight whitespace-nowrap cursor-pointer relative group rounded px-1 -mx-1"
+                style={{ color: '#F5EBE5' }}
+                title={`Click to copy ${token0Symbol} address URL`}
+              >
+                {token0Symbol}
+                <div
+                  className="absolute inset-0 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: COLORS.wormboneSubtle }}
+                />
+              </button>
+            ) : (
+              <span 
+                className="text-[18px] sm:text-[20px] font-medium tracking-tight whitespace-nowrap" 
+                style={{ color: '#F5EBE5' }}
+              >
+                {token0Symbol}
+              </span>
+            )}
+            <span 
+              className="text-[18px] sm:text-[20px] font-medium tracking-tight" 
+              style={{ color: '#8E7571' }}
+            >
+              /
+            </span>
+            {token1Address ? (
+              <button
+                onClick={() => copyTokenAddressUrl(chainId, token1Address, token1Symbol)}
+                className="text-[18px] sm:text-[20px] font-medium tracking-tight whitespace-nowrap cursor-pointer relative group rounded px-1 -mx-1"
+                style={{ color: '#F5EBE5' }}
+                title={`Click to copy ${token1Symbol} address URL`}
+              >
+                {token1Symbol}
+                <div
+                  className="absolute inset-0 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: COLORS.wormboneSubtle }}
+                />
+              </button>
+            ) : (
+              <span 
+                className="text-[18px] sm:text-[20px] font-medium tracking-tight whitespace-nowrap" 
+                style={{ color: '#F5EBE5' }}
+              >
+                {token1Symbol}
+              </span>
+            )}
+          </div>
           <VaultBadges
             exchange={exchange}
             vaultVersion={vaultVersion}
             feeTier={feeTier}
             chainId={chainId}
+            chainName={chainName}
+            poolAddress={poolAddress}
             poolUrl={poolUrl}
           />
         </div>
