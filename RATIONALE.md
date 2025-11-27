@@ -177,8 +177,12 @@ Instant signal of vault health and rebalance mode.
 - Custom liquidity transformation algorithm for chart clarity.
 - **shadcn** for UI consistency.
 - **WalletConnect** Multi-wallet integration.
+- **Vercel Analytics** for production monitoring.
+- **Sonner** for toast notifications with dark mode styling.
 - Full implementation, not just design — ready to ship.
 - Smooth transitions, hover states, loading states, empty states.
+- Interactive token symbols with clipboard integration.
+- Direct DEX pool links (Uniswap, PancakeSwap, Aerodrome).
 
 ---
 
@@ -205,8 +209,9 @@ Few design tokens → clean, branded, maintainable.
 ### 8. Time & Cost
 
 - **Duration**: 72 hours
-- **Cost**: $250 in tools + compute
+- **Cost**: $280 in tools + compute
 - **Output**: From 0 → full product mock + code implementation
+- **Deployment**: Production-ready on Vercel with analytics enabled
 
 ---
 
@@ -267,6 +272,17 @@ All six API endpoints fully integrated:
 4. ✅ Vault Balance History
 5. ✅ Price Impact
 6. ✅ Fees History
+
+### Interactive Features
+
+- **Token Address Copying**: Click token symbols (icons or text) to copy block explorer URLs to clipboard
+- **DEX Pool Links**: DEX badges link directly to underlying liquidity pools:
+  - Uniswap: `https://app.uniswap.org/explore/pools/{chain}/{poolAddress}`
+  - PancakeSwap: `https://pancakeswap.finance/liquidity/pool/bsc/{poolAddress}`
+  - Aerodrome: `https://base.blockscout.com/address/{poolAddress}`
+- **Conditional UI**: Dropdown chevron only appears when multiple vaults exist
+- **Hover States**: Subtle overlay effects using brand colors instead of opacity changes
+- **Toast Notifications**: Dark mode toasts with brand styling for user feedback
 
 ---
 

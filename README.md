@@ -445,6 +445,8 @@ npm run lint
 - **Charts**: Recharts
 - **Web3**: RainbowKit + wagmi + viem (mock mode)
 - **API**: Arrakis Indexer API v3
+- **Analytics**: Vercel Analytics
+- **Notifications**: Sonner (toast notifications)
 
 ## 📤 Submission Guidelines
 
@@ -465,8 +467,9 @@ When you're ready to submit:
    - Document any new components or utilities
    - Add comments to complex logic
 
-4. **Deployment** (Optional):
-   - Deploy to Vercel, Netlify, or your preferred platform
+4. **Deployment**:
+   - Deployed to Vercel with automatic deployments from `feature/arrakis-dashboard-implementation` branch
+   - Vercel Analytics enabled for production monitoring
    - Include the deployment URL in your submission
 
 ## 📝 Decision Log
@@ -476,6 +479,12 @@ When you're ready to submit:
 
 - **2025‑11‑26 – Multi-DEX support & vault metadata enhancement**  
   Added comprehensive DEX icon support (Uniswap, PancakeSwap, Aerodrome) with proper visual hierarchy in vault metadata cards. Enhanced price display logic with inversion support for different token pair conventions. This ensures the dashboard accurately represents vaults across all supported DEXs and chains, meeting the challenge requirement for "Pool details (DEX, fee tier, chain, trading pair)".
+
+- **2025‑11‑26 – Interactive token symbols & DEX pool links**  
+  Token symbols (icons and text) are now clickable, copying block explorer URLs to clipboard with toast notifications. DEX badges link directly to underlying liquidity pools on their respective exchanges (Uniswap explorer, PancakeSwap liquidity pools, Aerodrome on Blockscout). This enables quick access to on-chain data and pool details without leaving the dashboard.
+
+- **2025‑11‑26 – UX polish & production readiness**  
+  Implemented dark mode toasts with brand colors, conditional dropdown display (only shows when multiple vaults exist), improved hover states with subtle overlay effects, and Vercel Analytics integration for production monitoring. Fixed token address mapping for FOLKS/USDT vault to ensure correct address copying.
 
 ---
 

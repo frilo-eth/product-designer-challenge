@@ -61,6 +61,11 @@ The implementation closely follows the Figma design with adaptations for:
 - ✅ Price formatting with thousand separators
 - ✅ Price inversion support for different token pair conventions
 - ✅ Prefetching for adjacent vaults (performance optimization)
+- ✅ Interactive token symbols (click to copy block explorer URLs)
+- ✅ Direct DEX pool links (Uniswap, PancakeSwap, Aerodrome)
+- ✅ Dark mode toast notifications with brand styling
+- ✅ Vercel Analytics integration for production monitoring
+- ✅ Conditional UI elements (dropdown only when multiple vaults exist)
 
 ## ⚠️ Incomplete Items & Trade-offs
 
